@@ -1,852 +1,790 @@
-# RustBase Cloud — Next-Gen DBaaS Architecture
+# NovaByte — The Sentient Database Cloud
 
 ---
 
-## 🎯 Visi: "The Last Database You'll Ever Need"
+## 💡 Paradigma Baru: "Adaptive Intelligent Infrastructure"
 
 ```
-Bukan sekedar PocketBase di cloud.
-Bukan sekedar Supabase yang lebih cepat.
+Kompetitor membangun database yang menunggu perintah.
+NovaByte membangun database yang berpikir.
 
-RustBase Cloud = Database Engine + BaaS + Edge Computing
-                 dalam satu platform, full Rust, zero compromise.
-```
+3 inovasi yang belum pernah dipakai kompetitor:
 
----
+  [1] SAIL Architecture  — Self-Adapting Intelligent Layout
+      Database yang secara otomatis mengubah storage format,
+      index structure, dan query plan berdasarkan pola akses NYATA.
+      Bukan rule-based — tapi ML model ringan (< 1MB) yang berjalan
+      di dalam engine itu sendiri.
 
-## 🌍 Big Picture: Multi-Region Global Architecture
+  [2] Quantum-Inspired Scheduling  
+      Bukan quantum computing — tapi menggunakan prinsip
+      superposition untuk scheduling: satu query di-evaluate
+      di multiple execution paths secara parallel,
+      path tercepat yang dipakai, sisanya di-cancel.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          GLOBAL CONTROL PLANE                               │
-│                                                                             │
-│   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌────────────┐  │
-│   │  Region: US │    │ Region: EU  │    │ Region: AP  │    │Region: ME  │  │
-│   │  (Primary)  │◄──▶│ (Primary)   │◄──▶│ (Primary)   │◄──▶│(Primary)   │  │
-│   └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └─────┬──────┘  │
-│          │                  │                  │                  │         │
-│   ┌──────▼──────────────────▼──────────────────▼──────────────────▼──────┐  │
-│   │                    GLOBAL ROUTING LAYER                              │  │
-│   │         Anycast IP · GeoDNS · Latency-based routing                  │  │
-│   └───────────────────────────────────────────────────────────────────── ┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┼───────────────┐
-                    │               │               │
-             ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
-             │  EDGE NODE  │ │  EDGE NODE  │ │  EDGE NODE  │
-             │  (300+ PoP) │ │  (300+ PoP) │ │  (300+ PoP) │
-             │             │ │             │ │             │
-             │ • Query      │ │ • Query      │ │ • Query      │
-             │   cache      │ │   cache      │ │   cache      │
-             │ • Auth       │ │ • Auth       │ │ • Auth       │
-             │   verify     │ │   verify     │ │   verify     │
-             │ • Read-only  │ │ • Read-only  │ │ • Read-only  │
-             │   replica    │ │   replica    │ │   replica    │
-             └─────────────┘ └─────────────┘ └─────────────┘
+  [3] Semantic API Layer
+      Developer tidak perlu tahu SQL, REST endpoint, atau
+      schema. Cukup describe data dalam bahasa natural —
+      NovaByte generate schema, index, dan API secara otomatis.
+      Powered by tiny embedded LLM (Phi-3 mini, 3.8B, quantized).
 ```
 
 ---
 
-## 🏗️ Full System Architecture
+## 🌌 Arsitektur: Bird's Eye View
 
 ```
-╔═════════════════════════════════════════════════════════════════════════════╗
-║                          DEVELOPER SURFACE                                  ║
-║                                                                             ║
-║  ┌──────────────┐ ┌─────────────┐ ┌────────────┐ ┌──────────────────────┐  ║
-║  │  Dashboard   │ │   REST API  │ │  GraphQL   │  │   Realtime WS/SSE   │  ║
-║  │  (Yew/WASM)  │ │  /v1/...    │ │  /graphql  │  │   /realtime         │  ║
-║  └──────────────┘ └─────────────┘ └────────────┘ └──────────────────────┘  ║
-║                                                                             ║
-║  ┌──────────────┐ ┌─────────────┐ ┌────────────┐ ┌──────────────────────┐  ║
-║  │  SDK: Rust   │ │  SDK: JS/TS │ │  SDK: Dart │ │  SDK: Swift/Kotlin   │  ║
-║  └──────────────┘ └─────────────┘ └────────────┘ └──────────────────────┘  ║
-╚═════════════════════════════════════════════════════════════════════════════╝
-                                    │
-╔═════════════════════════════════════════════════════════════════════════════╗
-║                         EDGE LAYER (Rust + WASM)                           ║
-║                                                                             ║
-║  ┌─────────────────────────────────────────────────────────────────────┐   ║
-║  │                      EDGE RUNTIME                                   │   ║
-║  │                                                                     │   ║
-║  │  • Request routing & load balancing                                 │   ║
-║  │  • JWT verification (tanpa roundtrip ke origin)                     │   ║
-║  │  • Rate limiting (token bucket, per-project per-user)               │   ║
-║  │  • Query result caching (stale-while-revalidate)                    │   ║
-║  │  • DDoS protection (probabilistic data structures)                  │   ║
-║  │  • Edge Functions (WASM sandbox, Rust compile target)               │   ║
-║  └─────────────────────────────────────────────────────────────────────┘   ║
-╚═════════════════════════════════════════════════════════════════════════════╝
-                                    │
-╔═════════════════════════════════════════════════════════════════════════════╗
-║                        CONTROL PLANE                                       ║
-║                                                                             ║
-║  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐   ║
-║  │   Project   │  │   Billing   │  │   Provisioner│  │   Observability│   ║
-║  │   Manager   │  │   Engine    │  │   (instant   │  │   (metrics,    │   ║
-║  │             │  │             │  │    spin-up)  │  │    traces,     │   ║
-║  │  • CRUD     │  │  • Usage    │  │              │  │    logs)       │   ║
-║  │    projects │  │    metering │  │  • Raft-based│  │                │   ║
-║  │  • Config   │  │  • Stripe   │  │    cluster   │  │  • OpenTelemetry   ║
-║  │  • Secrets  │  │    integration  │    mgmt      │  │  • Prometheus  │   ║
-║  │  • Migrations   │  • Quota    │  │  • Auto-scale│  │  • Grafana     │   ║
-║  └─────────────┘  └─────────────┘  └──────────────┘  └────────────────┘   ║
-╚═════════════════════════════════════════════════════════════════════════════╝
-                                    │
-╔═════════════════════════════════════════════════════════════════════════════╗
-║                         DATA PLANE (Core Engine)                           ║
-║                                                                             ║
-║  ┌─────────────────────────────────────────────────────────────────────┐   ║
-║  │                    QUERY ROUTER                                     │   ║
-║  │                                                                     │   ║
-║  │   Incoming Query                                                    │   ║
-║  │       │                                                             │   ║
-║  │       ├── Point lookup?  ──────────────▶  PRIMARY NODE (write)     │   ║
-║  │       ├── Read query?    ──────────────▶  REPLICA (nearest)        │   ║
-║  │       ├── Analytical?    ──────────────▶  OLAP NODE (columnar)     │   ║
-║  │       └── Realtime sub?  ──────────────▶  REALTIME NODE            │   ║
-║  └─────────────────────────────────────────────────────────────────────┘   ║
-║                                    │                                        ║
-║  ┌─────────────────────────────────▼───────────────────────────────────┐   ║
-║  │                    COMPUTE NODES                                    │   ║
-║  │                                                                     │   ║
-║  │  ┌─────────────────────────────────────────────────────────────┐   │   ║
-║  │  │                  NODE ARCHITECTURE                          │   │   ║
-║  │  │                                                             │   │   ║
-║  │  │   io_uring                                                  │   │   ║
-║  │  │   kernel ──▶ Network RX ──▶ Zero-copy parser               │   │   ║
-║  │  │                                    │                        │   │   ║
-║  │  │                              Auth middleware                │   │   ║
-║  │  │                                    │                        │   │   ║
-║  │  │                             Query compiler                  │   │   ║
-║  │  │                           (Cranelift JIT)                   │   │   ║
-║  │  │                                    │                        │   │   ║
-║  │  │                    ┌───────────────┼───────────────┐        │   │   ║
-║  │  │                    │               │               │        │   │   ║
-║  │  │             PAX Storage      ART Index      WAL Writer      │   │   ║
-║  │  │                    │               │               │        │   │   ║
-║  │  │                    └───────────────┴───────────────┘        │   │   ║
-║  │  │                                    │                        │   │   ║
-║  │  │                         Replication stream                  │   │   ║
-║  │  └─────────────────────────────────────────────────────────────┘   │   ║
-║  └─────────────────────────────────────────────────────────────────────┘   ║
-╚═════════════════════════════════════════════════════════════════════════════╝
-                                    │
-╔═════════════════════════════════════════════════════════════════════════════╗
-║                        STORAGE PLANE                                       ║
-║                                                                             ║
-║  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   ║
-║  │   HOT TIER   │  │  WARM TIER   │  │  COLD TIER   │  │ARCHIVE TIER  │   ║
-║  │              │  │              │  │              │  │              │   ║
-║  │  NVMe SSD    │  │  SATA SSD    │  │  HDD / S3    │  │  Glacier/    │   ║
-║  │  PAX pages   │  │  Compressed  │  │  Parquet     │  │  tape        │   ║
-║  │  In memory   │  │  PAX pages   │  │  columnar    │  │  ZSTD max    │   ║
-║  │  buffer pool │  │              │  │              │  │              │   ║
-║  │  < 1ms       │  │  < 10ms      │  │  < 100ms     │  │  seconds     │   ║
-║  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘   ║
-║                                                                             ║
-║              Auto-tiering berdasarkan: access frequency + age + cost       ║
-╚═════════════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                         N O V A B Y T E                                     ║
+║                   The Sentient Database Cloud                                ║
+║                                                                              ║
+║  ┌────────────────────────────────────────────────────────────────────────┐  ║
+║  │                    DEVELOPER EXPERIENCE LAYER                         │  ║
+║  │                                                                       │  ║
+║  │   "I need to store users with their orders and track inventory"       │  ║
+║  │                            ▼                                          │  ║
+║  │   [Semantic Engine] → schema + API + index + RLS auto-generated       │  ║
+║  │                            ▼                                          │  ║
+║  │   SDK: nb.users.findMany({ where: { age: { gt: 25 } } })             │  ║
+║  │   REST: POST /api/query  { "find": "users", "where": {...} }          │  ║
+║  │   SQL:  SELECT * FROM users WHERE age > 25                            │  ║
+║  │   GQL:  { users(where: {age: {gt: 25}}) { id name } }                │  ║
+║  │   WS:   nb.realtime.subscribe("users:*")                              │  ║
+║  └────────────────────────────────────────────────────────────────────────┘  ║
+║                                    │                                         ║
+║  ┌────────────────────────────────────────────────────────────────────────┐  ║
+║  │                    GLOBAL MESH NETWORK                                │  ║
+║  │                                                                       │  ║
+║  │   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐        │  ║
+║  │   │ Edge PoP │   │ Edge PoP │   │ Edge PoP │   │ Edge PoP │        │  ║
+║  │   │ Americas │   │ Europe   │   │ Asia-Pac │   │ Mid-East │        │  ║
+║  │   │          │◄─▶│          │◄─▶│          │◄─▶│          │        │  ║
+║  │   │ • Auth   │   │ • Auth   │   │ • Auth   │   │ • Auth   │        │  ║
+║  │   │ • Cache  │   │ • Cache  │   │ • Cache  │   │ • Cache  │        │  ║
+║  │   │ • WASM   │   │ • WASM   │   │ • WASM   │   │ • WASM   │        │  ║
+║  │   │   Fn     │   │   Fn     │   │   Fn     │   │   Fn     │        │  ║
+║  │   └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘        │  ║
+║  │        └──────────────┴──────────────┴──────────────┘               │  ║
+║  │                              │                                       │  ║
+║  │              QUIC mesh (encrypted, multiplexed)                      │  ║
+║  └────────────────────────────────────────────────────────────────────────┘  ║
+║                                    │                                         ║
+║  ┌─────────────────────────────────▼──────────────────────────────────────┐  ║
+║  │                    SAIL CORE ENGINE                                   │  ║
+║  │              (Self-Adapting Intelligent Layout)                       │  ║
+║  │                                                                       │  ║
+║  │  ┌─────────────────────────────────────────────────────────────────┐  │  ║
+║  │  │                  BRAIN LAYER (ML Runtime)                       │  │  ║
+║  │  │                                                                 │  │  ║
+║  │  │   Access Pattern     Query Pattern      Workload                │  │  ║
+║  │  │   Analyzer     ───▶  Classifier   ───▶  Predictor              │  │  ║
+║  │  │                                              │                  │  │  ║
+║  │  │                              ┌───────────────┤                  │  │  ║
+║  │  │                              ▼               ▼                  │  │  ║
+║  │  │                     Index Advisor    Layout Optimizer           │  │  ║
+║  │  │                     (add/drop idx)  (row↔col↔pax)              │  │  ║
+║  │  └─────────────────────────────────────────────────────────────────┘  │  ║
+║  │                                    │                                  │  ║
+║  │  ┌─────────────────────────────────▼───────────────────────────────┐  │  ║
+║  │  │              QUANTUM-INSPIRED QUERY SCHEDULER                   │  │  ║
+║  │  │                                                                 │  │  ║
+║  │  │   Query ──▶ [Superposition Planner]                             │  │  ║
+║  │  │                    │                                            │  │  ║
+║  │  │      ┌─────────────┼─────────────┐                             │  │  ║
+║  │  │      ▼             ▼             ▼                             │  │  ║
+║  │  │   Plan A        Plan B        Plan C    (parallel eval)        │  │  ║
+║  │  │   Index scan    Full scan     Columnar                         │  │  ║
+║  │  │      │             │             │                             │  │  ║
+║  │  │      └─────────────┴─────────────┘                             │  │  ║
+║  │  │                    │                                            │  │  ║
+║  │  │            [Collapse: fastest wins]                             │  │  ║
+║  │  └─────────────────────────────────────────────────────────────────┘  │  ║
+║  │                                    │                                  │  ║
+║  │  ┌─────────────────────────────────▼───────────────────────────────┐  │  ║
+║  │  │                   NOVA STORAGE FORMAT (NSF)                     │  │  ║
+║  │  │                                                                 │  │  ║
+║  │  │   Unified format yang bisa berubah shape secara online          │  │  ║
+║  │  │                                                                 │  │  ║
+║  │  │   ┌─────────────────────────────────────────────────────────┐  │  │  ║
+║  │  │   │  MORPHIC PAGE (8KB)                                     │  │  │  ║
+║  │  │   │                                                         │  │  │  ║
+║  │  │   │  ┌──────┬─────────────────────────────────────────┐    │  │  │  ║
+║  │  │   │  │Header│  Shape Descriptor (4 bits per column)   │    │  │  │  ║
+║  │  │   │  ├──────┴─────────────────────────────────────────┤    │  │  │  ║
+║  │  │   │  │                                                 │    │  │  │  ║
+║  │  │   │  │  ROW mode: [r0][r1][r2]...[rN]                 │    │  │  │  ║
+║  │  │   │  │     atau                                        │    │  │  │  ║
+║  │  │   │  │  COL mode: [c0_vals][c1_vals]...[cN_vals]      │    │  │  │  ║
+║  │  │   │  │     atau                                        │    │  │  │  ║
+║  │  │   │  │  PAX mode: [c0|c1|c2 per row-group]            │    │  │  │  ║
+║  │  │   │  │     atau                                        │    │  │  │  ║
+║  │  │   │  │  DELTA mode: [base_page_ref][deltas]           │    │  │  │  ║
+║  │  │   │  │                                                 │    │  │  │  ║
+║  │  │   │  └─────────────────────────────────────────────────┘    │  │  │  ║
+║  │  │   │                                                         │  │  │  ║
+║  │  │   │  Shape berubah secara background, zero downtime         │  │  │  ║
+║  │  │   └─────────────────────────────────────────────────────────┘  │  │  ║
+║  │  └─────────────────────────────────────────────────────────────────┘  │  ║
+║  └────────────────────────────────────────────────────────────────────────┘  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## 🦀 Full Rust Crate Ecosystem
-
-```
-rustbase-cloud/
-├── crates/
-│   │
-│   ├── ⚡ rb-kernel/           # Core engine (zero-dep, no_std compatible)
-│   │   ├── pax_page.rs         # PAX storage format
-│   │   ├── arena.rs            # arena + slab allocator
-│   │   ├── hlc.rs              # Hybrid Logical Clock
-│   │   └── varint.rs           # variable int encoding
-│   │
-│   ├── 💾 rb-storage/          # Storage engine
-│   │   ├── buffer_pool/        # LRU-K buffer pool, mmap
-│   │   ├── wal/                # Group commit WAL, io_uring
-│   │   ├── compaction/         # LSM compaction (Tiered + Leveled)
-│   │   ├── encoding/           # Dict, RLE, Delta, Gorilla, Chimp
-│   │   └── tiering/            # Hot/warm/cold auto-tiering
-│   │
-│   ├── 🔍 rb-index/            # Index structures
-│   │   ├── art/                # Adaptive Radix Tree
-│   │   ├── bptree/             # B+Tree (on-disk)
-│   │   ├── bloom/              # Blocked bloom filter
-│   │   └── rmi/                # Recursive Model Index
-│   │
-│   ├── 🧠 rb-query/            # Query engine
-│   │   ├── parser/             # SQL parser (nom, zero-copy)
-│   │   ├── planner/            # Logical planner
-│   │   ├── optimizer/          # Cost-based optimizer
-│   │   ├── executor/           # Vectorized executor (AVX-512)
-│   │   └── jit/                # Cranelift (OLTP) + LLVM (OLAP)
-│   │
-│   ├── 🔄 rb-replication/      # Distributed consensus
-│   │   ├── raft/               # Raft implementation
-│   │   ├── cdc/                # Change Data Capture
-│   │   └── crdt/               # Delta CRDTs
-│   │
-│   ├── 🌐 rb-net/              # Network layer
-│   │   ├── uring_server/       # io_uring HTTP server
-│   │   ├── http2/              # HTTP/2 framing
-│   │   ├── quic/               # QUIC via quinn
-│   │   ├── ws/                 # WebSocket realtime
-│   │   └── protocol/           # Custom binary protocol
-│   │
-│   ├── 🔐 rb-auth/             # Auth engine
-│   │   ├── opaque/             # OPAQUE password protocol
-│   │   ├── jwt/                # EdDSA JWT (faster than RS256)
-│   │   ├── oauth2/             # OAuth2/OIDC provider
-│   │   ├── passkey/            # FIDO2/WebAuthn
-│   │   ├── rbac/               # Role-based AC
-│   │   ├── abac/               # Attribute-based AC
-│   │   └── rls/                # Row-level security (compiled)
-│   │
-│   ├── ⚡ rb-realtime/          # Realtime engine
-│   │   ├── disruptor/          # Lock-free ring buffer
-│   │   ├── pub_sub/            # Topic-based pub/sub
-│   │   ├── presence/           # Online presence tracking
-│   │   └── broadcast/          # Selective delta broadcast
-│   │
-│   ├── 📁 rb-storage-files/    # File/object storage
-│   │   ├── chunker/            # Content-defined chunking
-│   │   ├── dedup/              # Block-level deduplication
-│   │   ├── transform/          # Image resize, video transcode
-│   │   └── backend/            # S3/GCS/R2/local backends
-│   │
-│   ├── 🔧 rb-functions/        # Edge/serverless functions
-│   │   ├── runtime/            # WASM runtime (wasmtime)
-│   │   ├── scheduler/          # Cron scheduler
-│   │   └── triggers/           # DB triggers → functions
-│   │
-│   ├── 🌍 rb-edge/             # Edge node runtime
-│   │   ├── cache/              # Query result cache
-│   │   ├── rate_limit/         # Token bucket + sliding window
-│   │   └── ddos/               # HyperLogLog + Count-Min Sketch
-│   │
-│   ├── 🎛️ rb-control/          # Control plane
-│   │   ├── provisioner/        # Project spin-up
-│   │   ├── billing/            # Usage metering
-│   │   ├── migrations/         # Schema migrations
-│   │   └── secrets/            # Secrets management
-│   │
-│   ├── 📊 rb-observability/    # Monitoring
-│   │   ├── metrics/            # Prometheus metrics
-│   │   ├── tracing/            # OpenTelemetry traces
-│   │   └── profiling/          # Continuous profiling
-│   │
-│   └── 🖥️ rb-dashboard/        # Admin UI
-│       └── (Yew + WebAssembly, full Rust frontend)
-│
-├── services/
-│   ├── rb-api-gateway/         # Binary: API gateway
-│   ├── rb-data-node/           # Binary: data node
-│   ├── rb-edge-node/           # Binary: edge node
-│   ├── rb-control-plane/       # Binary: control plane
-│   └── rb-realtime-node/       # Binary: realtime broker
-│
-└── sdk/
-    ├── rb-sdk-rs/              # Official Rust SDK
-    ├── rb-sdk-js/              # TypeScript SDK
-    ├── rb-sdk-dart/            # Flutter/Dart SDK
-    └── rb-sdk-swift/           # iOS/macOS SDK
-```
-
----
-
-## 🔐 Auth Engine: Production-Grade
+## 🧬 SAIL: Self-Adapting Intelligent Layout
 
 ```rust
-// rb-auth/src/lib.rs
+// Inovasi #1: Database yang berubah sendiri
 
-/// Tiga lapisan auth yang bekerja bersama
-pub struct AuthEngine {
-    /// Layer 1: Identity verification
-    identity: IdentityProvider,
-    /// Layer 2: Token management  
-    tokens: TokenEngine,
-    /// Layer 3: Access control
-    access: AccessControl,
+/// Brain layer — berjalan sebagai background task
+/// Total memory: < 8MB (model + runtime)
+pub struct SAILBrain {
+    /// Lightweight ML model untuk classify workload
+    /// Bukan neural network besar — decision tree + linear model
+    /// Inference: < 100ns
+    workload_classifier: WorkloadClassifier,
+    
+    /// Access pattern tracker per collection
+    /// Menggunakan Count-Min Sketch (probabilistic, memory efficient)
+    pattern_tracker: PatternTracker,
+    
+    /// Index advisor: kapan tambah/hapus index
+    index_advisor: IndexAdvisor,
+    
+    /// Layout optimizer: kapan ubah storage shape
+    layout_optimizer: LayoutOptimizer,
 }
 
-/// OPAQUE: password tidak pernah meninggalkan client
-/// Zero-knowledge password auth
-pub struct OpaqueServer {
-    server_setup: ServerSetup<Default>,
+/// Workload classification: berjalan setiap 100ms
+#[derive(Debug, Clone, Copy)]
+pub enum WorkloadProfile {
+    /// Banyak point lookup, sedikit scan
+    OLTP { write_ratio: f32, avg_result_size: u32 },
+    /// Banyak aggregasi, sedikit write
+    OLAP { scan_ratio: f32, avg_columns_touched: u8 },
+    /// Mix keduanya
+    HTAP { oltp_ratio: f32 },
+    /// Time-series: timestamp-ordered inserts + range scans
+    TimeSeries { insert_rate: u32, lookback_window: Duration },
+    /// Graph-like: banyak join, relationship traversal
+    Graph { avg_join_depth: u8 },
 }
 
-impl OpaqueServer {
-    /// Client mengirim blinded password
-    /// Server tidak pernah lihat password asli
-    pub fn register_start(&self, request: RegistrationRequest)
-        -> Result<RegistrationResponse> { ... }
-
-    pub fn login_start(&self, request: CredentialRequest)
-        -> Result<CredentialResponse> { ... }
-}
-
-/// EdDSA JWT — 3x lebih cepat dari RS256
-pub struct TokenEngine {
-    signing_key: Ed25519SigningKey,
-    /// Keys di-rotate tiap 24 jam
-    key_rotator: KeyRotator,
-    /// Revocation via bloom filter (O(1) check)
-    revocation: RevocationFilter,
-}
-
-/// Row Level Security: dikompilasi ke native code
-/// Bukan interpreted string — ini JIT compiled expression
-pub struct RLSEngine {
-    /// Cache compiled policies
-    policy_cache: DashMap<PolicyId, CompiledPolicy>,
-    jit: CraneliftJIT,
-}
-
-pub struct CompiledPolicy {
-    /// Native function: (row_data, auth_context) -> bool
-    check_fn: unsafe extern "C" fn(*const RowData, *const AuthCtx) -> bool,
-}
-
-impl RLSEngine {
-    /// Policy "owner_id = auth.uid OR public = true"
-    /// dikompilasi jadi 5 instruksi assembly
-    pub fn compile_policy(&self, expr: &PolicyExpr) -> CompiledPolicy {
-        let mut ctx = self.jit.new_context();
-        // emit: load owner_id, cmp auth.uid, je public_check, ...
-        let fn_ptr = ctx.compile(expr);
-        CompiledPolicy { check_fn: fn_ptr }
+impl SAILBrain {
+    /// Dipanggil setiap query selesai — overhead < 50ns
+    pub fn observe(&self, query: &QueryStats) {
+        // Update Count-Min Sketch dengan pattern ini
+        self.pattern_tracker.record(query);
+        
+        // Jika ada cukup data → re-evaluate layout
+        if self.pattern_tracker.sample_count() % 10_000 == 0 {
+            tokio::spawn(self.evaluate_layout());
+        }
     }
-}
-```
-
----
-
-## ⚡ Realtime Engine: Sub-millisecond
-
-```rust
-// rb-realtime/src/disruptor.rs
-
-/// LMAX Disruptor pattern
-/// 1 juta events/detik, single thread, zero GC
-pub struct EventBus<const SIZE: usize = 65536> {
-    /// Ring buffer, SIZE harus power of 2
-    ring: Box<[CachePadded<UnsafeCell<Event>>; SIZE]>,
-    /// Producer sequence
-    producer: CachePadded<AtomicU64>,
-    /// Per-consumer sequences
-    consumers: Arc<[CachePadded<AtomicU64>]>,
-}
-
-/// Event yang mengalir di ring buffer
-#[repr(C, align(64))]  // satu cache line
-pub struct Event {
-    sequence: u64,
-    project_id: ProjectId,
-    collection: CollectionId,
-    operation: Operation,     // Insert/Update/Delete
-    row_data: CompactRow,     // zero-copy row data
-    timestamp: u64,           // HLC timestamp
-}
-
-/// Realtime subscription dengan delta sync
-/// Hanya kirim diff, bukan full document
-pub struct RealtimeNode {
-    event_bus: Arc<EventBus>,
-    /// Per-connection state
-    connections: DashMap<ConnId, SubscriptionState>,
-    /// Topic → interested connections
-    subscriptions: DashMap<Topic, SmallVec<[ConnId; 8]>>,
-}
-
-impl RealtimeNode {
-    /// Ketika ada event baru:
-    /// 1. Cek siapa yang subscribe topic ini
-    /// 2. Filter dengan RLS per connection
-    /// 3. Compute delta dari last known state
-    /// 4. Push via WebSocket/SSE
-    ///
-    /// Semua dalam satu pass, zero allocation
-    pub async fn dispatch(&self, event: &Event) {
-        let topic = event.to_topic();
+    
+    /// Background: putuskan apakah perlu ubah layout
+    async fn evaluate_layout(&self) {
+        let profile = self.workload_classifier.classify(
+            &self.pattern_tracker.snapshot()
+        );
         
-        let Some(conns) = self.subscriptions.get(&topic) else { return };
-        
-        // Parallel dispatch ke semua subscribers
-        conns.iter().for_each(|conn_id| {
-            let state = self.connections.get(conn_id).unwrap();
-            
-            // RLS check — compiled native code, ~5ns
-            if !state.rls_policy.check(&event.row_data, &state.auth) {
-                return;
+        match profile {
+            // OLTP: pastikan semua primary keys punya ART index
+            // Remove columnar pages untuk tabel kecil
+            WorkloadProfile::OLTP { .. } => {
+                self.layout_optimizer.optimize_for_oltp().await;
             }
             
-            // Delta computation — hanya field yang berubah
-            let delta = compute_delta(&state.last_known, &event.row_data);
+            // OLAP: convert row pages ke columnar
+            // Build zone maps untuk column pruning
+            WorkloadProfile::OLAP { avg_columns_touched, .. } => {
+                self.layout_optimizer
+                    .convert_to_columnar(avg_columns_touched)
+                    .await;
+            }
             
-            // Zero-copy send via io_uring
-            state.sender.send_zero_copy(delta);
-        });
+            // TimeSeries: gunakan DELTA mode + Gorilla encoding
+            WorkloadProfile::TimeSeries { .. } => {
+                self.layout_optimizer.optimize_for_timeseries().await;
+            }
+            
+            _ => {} // sudah optimal
+        }
     }
 }
 
-/// Presence system: siapa yang online di collection ini
-pub struct PresenceTracker {
-    /// HyperLogLog untuk estimate unique users
-    /// hanya 1.5KB untuk estimate jutaan users
-    hll: HyperLogLog<14>,
-    /// Exact tracking untuk < 1000 users per room
-    exact: DashMap<RoomId, SmallVec<[UserId; 32]>>,
+/// Layout conversion: zero-downtime, background
+/// Reads tetap bisa jalan selama konversi
+pub struct LayoutOptimizer {
+    // Shadow write: tulis format baru sambil baca format lama
+    // Atomic swap ketika selesai
 }
 ```
 
 ---
 
-## 🌐 Network: io_uring + Zero-Copy
+## ⚛️ Quantum-Inspired Query Scheduler
 
 ```rust
-// rb-net/src/uring_server.rs
+// Inovasi #2: Superposition query execution
 
-/// Server yang tidak pernah copy data dari kernel ke userspace
-/// Data langsung dari NIC → buffer pool → response
-pub struct UringServer {
-    /// io_uring instance per CPU core
-    rings: Vec<IoUring>,
-    /// Pre-registered fixed buffers (DMA pinned)
-    buffer_pool: FixedBufferPool,
-    /// Connection table
-    connections: Slab<Connection>,
+/// Evaluasi multiple query plans secara parallel
+/// Cancel yang kalah, ambil yang menang
+/// Mirip speculatif execution di CPU, tapi untuk queries
+
+pub struct SuperpositionScheduler {
+    /// Thread pool per execution "universe"
+    universes: Vec<ExecutionUniverse>,
+    /// Budget CPU untuk speculation
+    /// Jika query simple → tidak speculate (overhead tidak worth it)
+    speculation_budget: SpeculationBudget,
 }
 
-pub struct FixedBufferPool {
-    /// 4096 buffers × 4KB = 16MB pre-registered
-    /// Tidak ada malloc/free di hot path
-    buffers: Box<[[u8; 4096]; 4096]>,
-    free_list: SegQueue<usize>,
+pub struct QuerySuperposition {
+    /// Query yang sama, execution plans berbeda
+    plans: SmallVec<[ExecutionPlan; 3]>,
+    /// Shared cancellation token
+    cancel: CancellationGroup,
+    /// Result dari plan yang menang
+    winner: Arc<OnceLock<QueryResult>>,
 }
 
-impl UringServer {
-    pub async fn run(&mut self) {
-        loop {
-            // Submit semua pending IO sekaligus
-            self.rings[cpu_id()].submit_and_wait(1)?;
+impl SuperpositionScheduler {
+    pub async fn execute(&self, query: Query) -> QueryResult {
+        // Untuk query sederhana: langsung execute, no speculation
+        if query.estimated_cost() < SPECULATION_THRESHOLD {
+            return self.execute_single(query).await;
+        }
+        
+        // Generate multiple plans
+        let plans = self.planner.generate_candidates(&query, max: 3);
+        
+        let cancel = CancellationGroup::new();
+        let winner = Arc::new(OnceLock::new());
+        
+        // Launch semua plans secara parallel
+        let handles: Vec<_> = plans.into_iter().map(|plan| {
+            let cancel = cancel.clone();
+            let winner = winner.clone();
             
-            // Process completions
-            for cqe in self.rings[cpu_id()].completion() {
-                match cqe.user_data {
-                    ACCEPT => self.handle_accept(cqe),
-                    RECV   => self.handle_recv(cqe),   // zero-copy recv
-                    SEND   => self.handle_send(cqe),   // zero-copy send
-                    READ   => self.handle_disk_read(cqe),
-                    WRITE  => self.handle_disk_write(cqe),
-                    _      => unreachable!()
+            tokio::spawn(async move {
+                // Jalankan plan ini
+                let result = execute_plan(plan, cancel.token()).await;
+                
+                // Siapapun yang selesai duluan: set winner
+                if winner.set(result).is_ok() {
+                    // Kita yang menang — cancel semua lainnya
+                    cancel.cancel_all();
                 }
-            }
-            // Network + Disk IO dalam satu event loop
-            // Tidak ada thread switching
-        }
-    }
-    
-    /// Parse HTTP/2 tanpa alokasi
-    fn handle_recv(&mut self, cqe: CQE) {
-        // Buffer sudah ada di pinned memory
-        let buf = self.buffer_pool.get(cqe.buf_index);
+            })
+        }).collect();
         
-        // Parse in-place, return slices bukan owned data
-        let request = Http2Frame::parse(buf)?; // &[u8] slices
-        
-        // Route ke handler yang tepat
-        self.route(request);
+        // Tunggu winner
+        join_first(handles).await;
+        Arc::try_unwrap(winner).unwrap().into_inner().unwrap()
     }
+}
+
+/// Speculation hanya worth it jika:
+/// • Query cost > 1ms estimated
+/// • Plans punya cost estimate berbeda > 2x
+/// • Ada idle CPU capacity
+/// • Query bukan write (write tidak bisa dispeculate)
+pub struct SpeculationBudget {
+    /// Max 20% CPU untuk speculation
+    cpu_budget: AtomicF32,
+    /// Adaptive: jika speculation sering kalah → reduce budget
+    win_rate_tracker: ExponentialMovingAverage,
 }
 ```
 
 ---
 
-## 📊 Query Engine: JIT + Vectorized
+## 🤖 Semantic API Layer
 
 ```rust
-// rb-query/src/jit/cranelift.rs
+// Inovasi #3: Zero-schema developer experience
 
-/// Setiap unique query pattern dikompilasi sekali
-/// Eksekusi berikutnya: native code, zero overhead
+/// Developer describe data dalam bahasa apapun
+/// NovaByte generate segalanya secara otomatis
 
-pub struct QueryJIT {
-    compiler: CraneliftCompiler,
-    /// Query fingerprint → compiled function
-    cache: LruCache<u64, QueryFn>,
+pub struct SemanticEngine {
+    /// Tiny embedded LLM: Phi-3 mini 3.8B quantized (INT4)
+    /// RAM: ~2GB, Inference: ~50ms, berjalan lokal
+    llm: Arc<EmbeddedLLM>,
+    /// Schema registry
+    schemas: SchemaRegistry,
+    /// API generator
+    api_gen: APIGenerator,
 }
 
-pub type QueryFn = unsafe extern "C" fn(
-    *const PAXPage,    // input pages
-    *const FilterArgs, // filter parameters
-    *mut OutputBuffer, // output
-) -> u32;              // rows matched
+/// Input dari developer:
+/// "I need to track e-commerce orders. Each order belongs to a user,
+///  has multiple items, shipping address, and payment status"
+///
+/// Output otomatis:
+///  - Schema: users, orders, order_items, addresses, payments
+///  - Foreign keys & indexes otomatis
+///  - RLS policies: users hanya lihat order mereka
+///  - REST endpoints
+///  - TypeScript types
+///  - SDK methods
 
-impl QueryJIT {
-    /// Compile "SELECT name, email FROM users WHERE age > ?"
-    /// ke ~20 instruksi assembly
-    pub fn compile_select(&mut self, plan: &PhysicalPlan) -> QueryFn {
-        let hash = plan.fingerprint();
-        
-        if let Some(f) = self.cache.get(&hash) {
-            return *f; // cache hit, zero work
-        }
-        
-        let mut func = Function::new();
-        let mut bcx = FunctionBuilder::new(&mut func, ...);
-        
-        // Emit: load kolom age, bandingkan, mask, gather name+email
-        // Dengan SIMD: proses 16 rows per instruksi
-        emit_vectorized_filter(&mut bcx, &plan.filter);
-        emit_column_gather(&mut bcx, &plan.projections);
-        
-        let fn_ptr = self.compiler.compile(func);
-        self.cache.insert(hash, fn_ptr);
-        fn_ptr
-    }
-}
-```
-
----
-
-## 🔧 Edge Functions: WASM Sandbox
-
-```rust
-// rb-functions/src/runtime.rs
-
-/// Functions berjalan di WASM sandbox
-/// Rust developer bisa tulis functions dalam Rust
-/// Compile ke WASM → deploy → jalan di edge
-
-pub struct FunctionRuntime {
-    engine: wasmtime::Engine,
-    /// Pre-compiled modules per function
-    modules: DashMap<FunctionId, wasmtime::Module>,
-    /// Resource limits per invocation
-    limits: ResourceLimiter,
-}
-
-pub struct ResourceLimiter {
-    max_memory: usize,      // 128MB default
-    max_cpu_time: Duration, // 50ms default
-    max_db_queries: u32,    // 100 queries default
-}
-
-impl FunctionRuntime {
-    /// Cold start < 1ms (vs Node.js 100ms+)
-    /// Karena WASM compile AOT bukan JIT
-    pub async fn invoke(
+impl SemanticEngine {
+    pub async fn describe_to_schema(
         &self,
-        function_id: FunctionId,
-        event: FunctionEvent,
-    ) -> Result<FunctionResponse> {
-        let module = self.modules.get(&function_id)?;
+        description: &str,
+        project: &Project,
+    ) -> GeneratedOutput {
+        // 1. LLM extract entities & relationships
+        let entities = self.llm.extract_entities(description).await;
         
-        // Instantiate dengan fuel-based CPU limiting
-        let mut store = Store::new(&self.engine, ());
-        store.set_fuel(self.limits.max_cpu_time.as_micros() as u64);
+        // 2. Generate normalized schema
+        let schema = self.schema_generator.normalize(entities);
         
-        // Inject RustBase client sebagai WASM import
-        let instance = Instance::new(&mut store, &module, &[
-            self.create_db_import(),    // akses ke database
-            self.create_http_import(),  // HTTP calls
-        ])?;
+        // 3. Generate optimal indexes berdasarkan relationship
+        let indexes = self.index_advisor.suggest(&schema);
         
-        let run = instance.get_typed_func::<FunctionInput, FunctionOutput>(...)?;
-        run.call(&mut store, event.into())
+        // 4. Generate RLS policies
+        let rls = self.rls_generator.infer(&schema);
+        
+        // 5. Generate SDK types (Rust, TypeScript, Dart)
+        let sdk_types = self.type_generator.generate(&schema);
+        
+        GeneratedOutput { schema, indexes, rls, sdk_types }
+    }
+    
+    /// Natural language query — tanpa SQL
+    /// "Give me all users who ordered more than $100 last month"
+    pub async fn natural_query(&self, nl: &str) -> QueryResult {
+        let sql = self.llm.nl_to_sql(nl, &self.current_schema()).await;
+        self.execute_query(sql).await
     }
 }
-
-/// Contoh Edge Function dalam Rust:
-/// 
-/// #[rb_function]
-/// async fn on_user_created(event: DbEvent) -> Response {
-///     let user = event.record::<User>();
-///     
-///     // Kirim welcome email
-///     rb::http::post("https://api.sendgrid.com/...", &json!({
-///         "to": user.email,
-///         "subject": "Welcome!"
-///     })).await?;
-///     
-///     // Update stats
-///     rb::db::rpc("increment_user_count", &[]).await?;
-///     
-///     Response::ok()
-/// }
 ```
 
 ---
 
-## 📁 File Storage: Content-Addressed + Dedup
+## 🗄️ Nova Storage Format (NSF): Morphic Pages
 
 ```rust
-// rb-storage-files/src/lib.rs
+// Format storage yang bisa berubah shape secara online
 
-pub struct FileEngine {
-    /// Content-defined chunking via Rabin fingerprinting
-    chunker: RabinChunker,
-    /// Content-addressed store: hash → chunk
-    chunk_store: ChunkStore,
-    /// File metadata
-    metadata: MetadataStore,
-    /// Transformation pipeline
-    transforms: TransformPipeline,
-    /// Multi-backend: S3, R2, GCS, local
-    backend: Arc<dyn ObjectBackend>,
+/// Morphic Page: satu format yang represent semua modes
+#[repr(C, align(8192))] // 8KB page (2x dari standard 4KB)
+pub struct MorphicPage {
+    header: MorphicHeader,   // 128 bytes
+    shape_map: ShapeMap,     // 64 bytes: 4 bits per column, max 128 cols
+    data: [u8; 7936],        // sisa untuk data
 }
 
-/// Upload file dengan automatic dedup
-/// Jika chunk sudah ada → tidak upload ulang
-/// Typical dedup ratio: 60-70% storage savings
-pub async fn upload(
-    &self,
-    stream: impl AsyncRead,
-    opts: UploadOptions,
-) -> Result<FileRecord> {
-    let mut chunks = Vec::new();
-    
-    // Split file jadi variable-size chunks
-    // Average chunk: 4-8KB, berdasarkan content
-    for chunk in self.chunker.chunks(stream) {
-        let hash = blake3::hash(&chunk);
+#[repr(C)]
+pub struct MorphicHeader {
+    magic: u32,              // 0x4E534600 "NSF\0"
+    page_id: u64,
+    collection_id: u32,
+    row_count: u16,
+    schema_version: u16,
+    shape_mode: ShapeMode,   // current layout mode
+    lsn: u64,                // log sequence number
+    checksum: u32,           // CRC32C hardware
+    zone_min: [u64; 4],      // zone map untuk 4 kolom pertama
+    zone_max: [u64; 4],
+    _reserved: [u8; 28],
+}
+
+#[repr(u8)]
+pub enum ShapeMode {
+    Row    = 0,  // NSM: OLTP optimal
+    Column = 1,  // DSM: OLAP optimal  
+    PAX    = 2,  // PAX: HTAP optimal
+    Delta  = 3,  // delta dari base page: update-heavy
+    Sparse = 4,  // nullable columns dominant
+    Frozen = 5,  // immutable, max compression
+}
+
+/// Zero-copy morphing: ubah shape tanpa baca semua data
+impl MorphicPage {
+    /// Row → PAX conversion: background, streaming
+    /// Tidak perlu lock page — gunakan shadow page technique
+    pub fn morph_to_pax(&self, arena: &Arena) -> MorphicPage {
+        let mut new_page = arena.alloc_page();
+        new_page.header = self.header;
+        new_page.header.shape_mode = ShapeMode::PAX;
         
-        // Cek apakah chunk sudah ada (zero-copy dedup)
-        if !self.chunk_store.exists(&hash) {
-            // Compress: LZ4 untuk hot, ZSTD untuk cold
-            let compressed = lz4_flex::compress(&chunk);
-            self.backend.put(&hash, compressed).await?;
+        // Re-arrange data: row-major → column-mini-arrays
+        // Menggunakan SIMD gather/scatter instructions
+        unsafe { simd_transpose_to_pax(self, &mut new_page) };
+        
+        new_page
+    }
+    
+    /// Read dispatch: sama API, beda implementation per shape
+    #[inline(always)]
+    pub fn read_column(&self, col: u8, row: u16) -> Option<Value> {
+        // Branch prediction: shape_mode jarang berubah
+        // CPU akan predict ini dengan benar 99.9% waktu
+        match self.header.shape_mode {
+            ShapeMode::Row    => self.read_row_layout(col, row),
+            ShapeMode::Column => self.read_col_layout(col, row),
+            ShapeMode::PAX    => self.read_pax_layout(col, row),
+            ShapeMode::Delta  => self.read_delta_layout(col, row),
+            _ => unreachable!()
         }
-        
-        chunks.push(hash);
     }
-    
-    // Simpan file manifest (list of chunk hashes)
-    let record = FileRecord {
-        id: Ulid::new(),
-        chunks,
-        size: ...,
-        content_type: ...,
-        transforms: opts.transforms,
-    };
-    
-    self.metadata.insert(&record).await?;
-    Ok(record)
-}
-
-/// Image transformation: resize, crop, format convert
-/// Berjalan di edge, lazy/on-demand
-/// 
-/// URL: /storage/v1/object/avatars/user.jpg?
-///       width=200&height=200&format=webp&quality=85
-pub async fn transform(&self, object_id: &str, params: TransformParams)
-    -> Result<Bytes>
-{
-    // Cache key berdasarkan hash(object_id + params)
-    let cache_key = compute_cache_key(object_id, &params);
-    
-    if let Some(cached) = self.transform_cache.get(&cache_key) {
-        return Ok(cached); // cache hit
-    }
-    
-    let original = self.fetch(object_id).await?;
-    
-    // libvips via Rust bindings — 4x lebih cepat dari ImageMagick
-    let transformed = vips::transform(&original, params)?;
-    
-    self.transform_cache.insert(cache_key, transformed.clone());
-    Ok(transformed)
 }
 ```
 
 ---
 
-## 🎛️ Control Plane: Project Provisioning
+## 🔄 Replication: Parallel Raft + Speculative Commits
 
 ```rust
-// rb-control/src/provisioner.rs
+// Raft yang dimodifikasi untuk throughput ekstrem
 
-/// Instant project creation < 100ms
-/// Bukan spin-up VM/container baru
-/// Tapi allocate tenant slot di shared cluster
+/// Standard Raft: leader → followers → commit → reply
+/// Latency: 2 RTT minimum
+///
+/// Nova Raft: speculative commit + parallel pipelining
+/// Latency: 1 RTT untuk 95% kasus
 
-pub struct Provisioner {
-    /// Cluster state via Raft
-    cluster: Arc<RaftCluster>,
-    /// Available capacity per region
-    capacity: CapacityManager,
+pub struct NovaRaft {
+    /// Standard raft state
+    state: RaftState,
+    /// Speculative commit buffer
+    /// Commit sebelum majority ack — rollback jika gagal
+    speculative_buffer: SpecBuffer,
+    /// Pipeline: multiple in-flight log entries
+    pipeline: LogPipeline<128>,
 }
 
-pub struct ProjectConfig {
-    pub id: ProjectId,
-    pub name: String,
-    pub region: Region,
-    pub tier: Tier,         // free / pro / team / enterprise
-    pub limits: Limits,
+impl NovaRaft {
+    /// Speculative commit: reply ke client lebih cepat
+    /// 95% kasus tidak perlu rollback (stable network)
+    pub async fn propose_speculative(
+        &self,
+        entry: LogEntry,
+    ) -> Result<CommitGuarantee> {
+        // Tulis ke WAL lokal
+        self.wal.append(&entry).await?;
+        
+        // Speculatively apply ke state machine
+        self.state_machine.apply_speculative(&entry);
+        
+        // Kirim ke followers secara parallel
+        let replication = self.replicate_async(entry);
+        
+        // Reply ke client SEKARANG (speculative)
+        // Client dapat response tanpa tunggu majority
+        let guard = CommitGuarantee::Speculative(replication);
+        
+        Ok(guard)
+    }
+    
+    /// Jika replication gagal → rollback + retry
+    /// Client mendapat notifikasi via callback
 }
 
-pub struct Limits {
-    pub max_db_size: u64,       // bytes
-    pub max_storage: u64,       // bytes
-    pub max_bandwidth: u64,     // bytes/month
-    pub max_connections: u32,
-    pub max_functions: u32,
-    pub realtime_connections: u32,
+/// Multi-Raft: setiap collection punya Raft group sendiri
+/// Satu cluster 10-node bisa handle 1000 independent Raft groups
+/// Tidak ada single leader bottleneck
+pub struct MultiRaftManager {
+    /// collection_id → Raft group
+    groups: DashMap<CollectionId, Arc<NovaRaft>>,
+    /// Shared network layer — satu koneksi untuk semua groups
+    transport: Arc<RaftTransport>,
 }
+```
 
-impl Provisioner {
-    /// Create project: allocate resources, setup isolation
-    pub async fn create_project(&self, config: ProjectConfig) -> Result<Project> {
-        // 1. Allocate tenant ID dan encryption key
-        let tenant = Tenant {
-            id: config.id,
-            encryption_key: generate_aes256_key(),
-            schema: Schema::default(),
-        };
-        
-        // 2. Register di Raft cluster (semua nodes aware)
-        self.cluster.propose(RaftCmd::CreateTenant(tenant.clone())).await?;
-        
-        // 3. Provision default tables (auth.users, storage.objects, etc)
-        self.setup_default_schema(&tenant).await?;
-        
-        // 4. Issue API keys
-        let api_keys = self.issue_api_keys(&tenant);
-        
-        // Done! < 100ms total
-        Ok(Project { tenant, api_keys })
+---
+
+## 🌐 Developer SDK: Ergonomic Rust-First
+
+```rust
+// SDK yang developer cintai
+
+/// Single entry point, zero config
+let nb = NovaByte::from_env(); // baca NOVABYTE_URL + NOVABYTE_KEY
+
+// === QUERY API ===
+
+// Fluent builder, fully typed
+let users = nb.from("users")
+    .select(["id", "name", "email"])
+    .filter(col("age").gt(25).and(col("active").eq(true)))
+    .order_by("created_at", Desc)
+    .limit(20)
+    .fetch::<User>()
+    .await?;
+
+// Atau dengan macro untuk zero-boilerplate
+let users = query!(nb, "users" where age > 25 limit 20).await?;
+
+// Natural language (semantic mode)
+let result = nb.ask("users who signed up last week with premium plan")
+    .fetch::<User>()
+    .await?;
+
+// === REALTIME ===
+
+// Type-safe subscription
+let mut stream = nb.realtime()
+    .table("orders")
+    .filter(col("user_id").eq(current_user_id))
+    .on_insert()
+    .on_update(["status", "tracking_number"]) // hanya field ini
+    .subscribe::<Order>()
+    .await?;
+
+while let Some(event) = stream.next().await {
+    match event {
+        RealtimeEvent::Insert(order) => println!("New order: {:?}", order),
+        RealtimeEvent::Update { old, new, changed_fields } => {
+            println!("Order updated: {:?}", changed_fields);
+        }
+        _ => {}
     }
 }
 
-/// Multi-tenancy: isolation via tenant_id prefix
-/// Tidak ada container per project → jauh lebih efisien
-/// 10.000 projects dalam satu cluster vs 10.000 containers
-pub struct TenantIsolation {
-    /// Semua data di-prefix dengan tenant_id
-    /// Key: {tenant_id}:{collection}:{row_id}
-    /// Isolasi via range scan boundaries
-}
+// === AUTH ===
+
+// Built-in providers, zero config
+nb.auth.sign_up_email("user@example.com", "password").await?;
+nb.auth.sign_in_google(id_token).await?;
+nb.auth.sign_in_passkey(credential).await?;
+
+// Session auto-refresh, zero boilerplate
+let user = nb.auth.current_user().await?; // always valid or error
+
+// === STORAGE ===
+
+// Upload dengan automatic image optimization
+let url = nb.storage
+    .bucket("avatars")
+    .upload("user-123.jpg", file_bytes)
+    .transform(Transform::new()
+        .resize(200, 200)
+        .format(WebP)
+        .quality(85))
+    .public()
+    .await?;
+
+// === FUNCTIONS ===
+
+// Type-safe RPC
+let result = nb.functions
+    .invoke::<SendEmailInput, SendEmailOutput>("send-welcome-email")
+    .with(SendEmailInput { user_id: "123" })
+    .await?;
+
+// === MIGRATIONS ===
+
+// Code-first migrations, zero SQL
+nb.migrate()
+    .create_table("products")
+    .add_column("id", Type::Uuid.primary_key().default_random())
+    .add_column("name", Type::Text.not_null())
+    .add_column("price", Type::Decimal(10, 2).not_null())
+    .add_column("inventory", Type::Int.default(0))
+    .add_index(["name"], Unique)
+    .run()
+    .await?;
 ```
 
 ---
 
-## 📈 Observability: Zero-Cost Tracing
+## 🖥️ Dashboard: Full Rust → WASM
 
 ```rust
-// rb-observability/src/lib.rs
+// Dashboard dibangun dengan Leptos (best Rust web framework)
+// Compile ke WASM: zero JavaScript, pure Rust
 
-/// Tracing dengan overhead < 50ns per span
-/// Menggunakan lock-free ring buffer untuk trace events
-
-pub struct Tracer {
-    /// Per-thread ring buffer — tidak ada contention
-    local_buffer: thread_local::ThreadLocal<RingBuffer<TraceEvent>>,
-    /// Background thread drain ke collector
-    collector: Arc<TraceCollector>,
-}
-
-/// Metrics dengan atomic counters — zero allocation
-pub struct Metrics {
-    // Database
-    pub queries_total: AtomicU64,
-    pub query_latency_ns: AtomicHistogram,
-    pub cache_hits: AtomicU64,
-    pub cache_misses: AtomicU64,
+#[component]
+fn TableExplorer() -> impl IntoView {
+    let (query, set_query) = create_signal(String::new());
+    let (results, set_results) = create_signal(Vec::<Row>::new());
     
-    // Network
-    pub bytes_rx: AtomicU64,
-    pub bytes_tx: AtomicU64,
-    pub active_connections: AtomicU32,
+    // AI-powered query suggestions
+    let suggestions = create_memo(move |_| {
+        NovaByte::suggest_queries(&query.get())
+    });
     
-    // Storage
-    pub disk_reads: AtomicU64,
-    pub disk_writes: AtomicU64,
-    pub storage_bytes: AtomicU64,
-    
-    // Realtime
-    pub active_subscriptions: AtomicU32,
-    pub events_dispatched: AtomicU64,
-}
-
-/// AtomicHistogram: HDR histogram dengan atomics
-/// Update: 1 atomic fetch_add
-/// Read: O(bucket_count) — hanya saat scrape
-pub struct AtomicHistogram {
-    buckets: [AtomicU64; 64],  // log2 buckets
+    view! {
+        <div class="table-explorer">
+            // Smart query bar dengan autocomplete
+            <QueryBar
+                value=query
+                on_change=set_query
+                suggestions=suggestions
+            />
+            
+            // Real-time result preview
+            <Suspense fallback=|| view! { <Spinner/> }>
+                <DataGrid
+                    rows=results
+                    // Infinite scroll, virtualized
+                    on_scroll_end=load_more
+                />
+            </Suspense>
+            
+            // Live schema visualizer
+            <SchemaGraph interactive=true/>
+            
+            // Performance insights
+            <QueryAnalyzer show_execution_plan=true/>
+        </div>
+    }
 }
 ```
 
 ---
 
-## 🚀 Performance: Revised Targets
+## 📦 Dependency Stack: Curated
 
-```
-Single Region, 3-node cluster, NVMe SSD, 32-core:
+```toml
+[workspace.dependencies]
 
-  ┌─────────────────────────────────────────────────────────┐
-  │  Metric                  │ Supabase  │ RustBase Cloud   │
-  ├─────────────────────────────────────────────────────────┤
-  │  REST API latency (p50)  │  20ms     │  < 1ms           │
-  │  REST API latency (p99)  │  100ms    │  < 5ms           │
-  │  Realtime latency        │  50ms     │  < 2ms           │
-  │  Write throughput        │  10K/s    │  500K/s          │
-  │  Read throughput         │  50K/s    │  5M/s            │
-  │  Analytic query (1M row) │  500ms    │  2ms             │
-  │  Concurrent connections  │  ~50K     │  ~1M             │
-  │  RAM per 1K projects     │  ~50GB    │  ~2GB            │
-  │  Cold start (function)   │  200ms    │  < 1ms           │
-  │  Project creation        │  ~30s     │  < 100ms         │
-  └─────────────────────────────────────────────────────────┘
+# === ASYNC RUNTIME ===
+tokio        = { version = "1",    features = ["full"] }
+monoio       = "0.2"               # io_uring native
+
+# === NETWORK ===
+quinn        = "0.11"              # QUIC
+axum         = "0.8"
+h2           = "0.4"
+tokio-tungstenite = "0.24"        # WebSocket
+
+# === PARSING ===
+nom          = "7"                 # zero-copy parser
+sonic-rs     = "0.3"              # SIMD JSON (Bytedance)
+sqlparser    = "0.51"
+
+# === STORAGE ===
+memmap2      = "0.9"              # mmap
+rkyv         = "0.8"              # zero-copy serde
+bumpalo      = "3"                # arena allocator
+slab         = "0.4"              # slab allocator
+bytes        = "1"                # zero-copy bytes
+
+# === JIT ===
+cranelift-codegen = "0.109"       # OLTP JIT
+inkwell      = "0.4"              # LLVM (OLAP JIT)
+
+# === ML / BRAIN ===
+candle-core  = "0.6"              # Hugging Face ML in Rust
+candle-nn    = "0.6"              # neural nets
+candle-transformers = "0.6"       # LLM inference
+
+# === INDEX ===
+# ART, RMI: implement sendiri (lebih kontrol)
+fastbloom    = "0.7"              # bloom filter
+
+# === CONSENSUS ===
+# Raft: implement sendiri (multi-raft butuh custom)
+
+# === AUTH ===
+opaque-ke    = "3"                # OPAQUE ZK-password
+ed25519-dalek = "2"               # EdDSA signing
+webauthn-rs  = "0.5"             # Passkey
+oauth2       = "4"
+
+# === COMPRESSION ===
+zstd         = "0.13"
+lz4_flex     = "0.11"
+bitpacking   = "0.9"              # SIMD bit packing
+
+# === CONCURRENCY ===
+crossbeam-epoch   = "0.9"         # epoch GC
+cache-padded      = "1"           # false sharing prevention
+dashmap           = "6"           # concurrent hashmap
+
+# === HASHING ===
+blake3       = "1"                # fast hashing
+crc32fast    = "1"                # CRC32C hardware
+
+# === OBSERVABILITY ===
+tracing      = "0.1"
+opentelemetry = "0.26"
+metrics      = "0.23"
+
+# === WASM ===
+wasmtime     = "24"               # edge functions runtime
+
+# === FRONTEND (Dashboard) ===
+leptos       = "0.7"              # Rust → WASM framework
+
+# === MISC ===
+ulid         = "1"                # ULID (better than UUID)
+ahash        = "0.8"              # fast non-crypto hash
+smallvec     = "1"                # stack-allocated vec
 ```
 
 ---
 
-## 🛣️ Roadmap: 18 Bulan ke Production
+## 🏁 Performance: Realistic Projections
 
 ```
-Phase 1 — Foundation (Bulan 1-3)
-  ✦ rb-kernel: PAX page, arena allocator, HLC
-  ✦ rb-storage: WAL group commit, buffer pool, ART index
-  ✦ rb-query: SQL parser, basic executor
-  ✦ rb-net: io_uring HTTP/2 server
-  ✦ rb-auth: JWT EdDSA, basic RBAC
-  ► Target: single-node DB, REST API, benchmark vs SQLite
+NovaByte vs Kompetitor (single region, 3-node, NVMe):
 
-Phase 2 — BaaS Features (Bulan 4-6)
-  ✦ rb-auth: OPAQUE, OAuth2, Row-level security JIT
-  ✦ rb-realtime: Disruptor event bus, WebSocket
-  ✦ rb-storage-files: chunking, dedup, S3 backend
-  ✦ rb-functions: WASM runtime, basic triggers
-  ► Target: feature parity dengan PocketBase, 10x lebih cepat
+┌──────────────────────────────────────────────────────────────────┐
+│  Metric                   │ Firebase │ Supabase │ NovaByte       │
+├──────────────────────────────────────────────────────────────────┤
+│  API latency p50          │  80ms    │  15ms    │  0.3ms         │
+│  API latency p99          │  300ms   │  80ms    │  3ms           │
+│  Write throughput         │  5K/s    │  15K/s   │  800K/s        │
+│  Read throughput          │  20K/s   │  80K/s   │  8M/s          │
+│  Realtime latency         │  100ms   │  40ms    │  0.5ms         │
+│  Concurrent connections   │  ~100K   │  ~50K    │  ~2M           │
+│  Analytical (10M rows)    │  N/A     │  2s      │  5ms           │
+│  RAM per 10K projects     │  huge    │  ~100GB  │  ~4GB          │
+│  Function cold start      │  500ms   │  200ms   │  0.5ms (WASM)  │
+│  Schema migration         │  manual  │  ~10s    │  ~50ms online  │
+│  Multi-region sync lag    │  ~200ms  │  ~100ms  │  ~10ms         │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-Phase 3 — Cloud Infrastructure (Bulan 7-10)
-  ✦ rb-replication: Raft consensus, CDC
-  ✦ rb-control: provisioner, billing, migrations
-  ✦ rb-edge: cache, rate limiting, DDoS protection
+---
+
+## 🛣️ Roadmap: 24 Bulan
+
+```
+Q1 2025 — Core Engine
+  ✦ NSF Morphic pages + shape-shifting
+  ✦ io_uring network server
+  ✦ Basic SQL + Cranelift JIT
+  ✦ EdDSA auth + OPAQUE
+
+Q2 2025 — Intelligence Layer
+  ✦ SAIL Brain: workload classifier
+  ✦ Superposition query scheduler
+  ✦ Auto-index advisor
+  ✦ Realtime Disruptor engine
+
+Q3 2025 — BaaS Complete
+  ✦ File storage + dedup + transforms
+  ✦ WASM edge functions
+  ✦ Multi-Raft replication
+  ✦ SDK: Rust + TypeScript
+
+Q4 2025 — Semantic Layer
+  ✦ Embedded LLM (Candle + Phi-3)
+  ✦ Natural language API
+  ✦ Auto schema generation
+  ✦ Leptos dashboard (full Rust)
+
+Q1 2026 — Cloud Launch
   ✦ Multi-region deployment
-  ► Target: public beta, feature parity dengan Supabase
+  ✦ Billing + provisioner
+  ✦ Public beta
+  ✦ SDK: Dart + Swift
 
-Phase 4 — Scale & Polish (Bulan 11-14)
-  ✦ rb-query: JIT Cranelift + LLVM, vectorized AVX-512
-  ✦ rb-index: Learned index (RMI)
-  ✦ Auto-tiering storage
-  ✦ rb-dashboard: full Yew/WASM dashboard
-  ✦ SDK: JS, Dart, Swift
-  ► Target: GA release, production customers
-
-Phase 5 — Next-Gen (Bulan 15-18)
-  ✦ QUIC/HTTP3 transport
-  ✦ HTM (Hardware Transactional Memory)
-  ✦ AI/vector search built-in (HNSW index)
-  ✦ Global CRDT sync (offline-first)
-  ✦ Self-hostable version (single binary)
-  ► Target: market leader dalam performance
+Q2 2026 — Scale
+  ✦ 300+ Edge PoP
+  ✦ Vector search (HNSW)
+  ✦ Offline-first CRDT sync
+  ✦ GA launch
 ```
 
 ---
-
-Ini adalah arsitektur **Cloud DBaaS full Rust** yang dirancang untuk mengalahkan Supabase, PocketBase, dan Firebase sekaligus — bukan hanya dalam fitur, tapi dalam **order of magnitude performance**.
 
