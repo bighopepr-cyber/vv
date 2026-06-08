@@ -1,790 +1,1568 @@
-# NovaByte — The Sentient Database Cloud
+
+# NovaByte v2 — The Evolutionary Database Infrastructure
 
 ---
 
-## 💡 Paradigma Baru: "Adaptive Intelligent Infrastructure"
+## Manifesto: Mengapa Database Tradisional Sudah Mati
 
 ```
-Kompetitor membangun database yang menunggu perintah.
-NovaByte membangun database yang berpikir.
+Database tradisional dibangun dengan asumsi tahun 1970:
+  • Developer tahu schema sebelum data ada
+  • Workload bersifat statis
+  • Infrastruktur adalah tanggung jawab developer
+  • Observability adalah afterthought
 
-3 inovasi yang belum pernah dipakai kompetitor:
+NovaByte membalik semua asumsi ini.
 
-  [1] SAIL Architecture  — Self-Adapting Intelligent Layout
-      Database yang secara otomatis mengubah storage format,
-      index structure, dan query plan berdasarkan pola akses NYATA.
-      Bukan rule-based — tapi ML model ringan (< 1MB) yang berjalan
-      di dalam engine itu sendiri.
+Bukan hanya "database yang lebih cepat."
+Bukan hanya "BaaS yang lebih pintar."
 
-  [2] Quantum-Inspired Scheduling  
-      Bukan quantum computing — tapi menggunakan prinsip
-      superposition untuk scheduling: satu query di-evaluate
-      di multiple execution paths secara parallel,
-      path tercepat yang dipakai, sisanya di-cancel.
-
-  [3] Semantic API Layer
-      Developer tidak perlu tahu SQL, REST endpoint, atau
-      schema. Cukup describe data dalam bahasa natural —
-      NovaByte generate schema, index, dan API secara otomatis.
-      Powered by tiny embedded LLM (Phi-3 mini, 3.8B, quantized).
+NovaByte adalah infrastruktur yang berevolusi bersama aplikasi Anda.
+Self-describing. Self-optimizing. Self-healing. Fully auditable.
 ```
 
 ---
 
-## 🌌 Arsitektur: Bird's Eye View
+## Kelemahan Blueprint v1 yang Diperbaiki
 
 ```
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                              ║
-║                         N O V A B Y T E                                     ║
-║                   The Sentient Database Cloud                                ║
-║                                                                              ║
-║  ┌────────────────────────────────────────────────────────────────────────┐  ║
-║  │                    DEVELOPER EXPERIENCE LAYER                         │  ║
-║  │                                                                       │  ║
-║  │   "I need to store users with their orders and track inventory"       │  ║
-║  │                            ▼                                          │  ║
-║  │   [Semantic Engine] → schema + API + index + RLS auto-generated       │  ║
-║  │                            ▼                                          │  ║
-║  │   SDK: nb.users.findMany({ where: { age: { gt: 25 } } })             │  ║
-║  │   REST: POST /api/query  { "find": "users", "where": {...} }          │  ║
-║  │   SQL:  SELECT * FROM users WHERE age > 25                            │  ║
-║  │   GQL:  { users(where: {age: {gt: 25}}) { id name } }                │  ║
-║  │   WS:   nb.realtime.subscribe("users:*")                              │  ║
-║  └────────────────────────────────────────────────────────────────────────┘  ║
-║                                    │                                         ║
-║  ┌────────────────────────────────────────────────────────────────────────┐  ║
-║  │                    GLOBAL MESH NETWORK                                │  ║
-║  │                                                                       │  ║
-║  │   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐        │  ║
-║  │   │ Edge PoP │   │ Edge PoP │   │ Edge PoP │   │ Edge PoP │        │  ║
-║  │   │ Americas │   │ Europe   │   │ Asia-Pac │   │ Mid-East │        │  ║
-║  │   │          │◄─▶│          │◄─▶│          │◄─▶│          │        │  ║
-║  │   │ • Auth   │   │ • Auth   │   │ • Auth   │   │ • Auth   │        │  ║
-║  │   │ • Cache  │   │ • Cache  │   │ • Cache  │   │ • Cache  │        │  ║
-║  │   │ • WASM   │   │ • WASM   │   │ • WASM   │   │ • WASM   │        │  ║
-║  │   │   Fn     │   │   Fn     │   │   Fn     │   │   Fn     │        │  ║
-║  │   └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘        │  ║
-║  │        └──────────────┴──────────────┴──────────────┘               │  ║
-║  │                              │                                       │  ║
-║  │              QUIC mesh (encrypted, multiplexed)                      │  ║
-║  └────────────────────────────────────────────────────────────────────────┘  ║
-║                                    │                                         ║
-║  ┌─────────────────────────────────▼──────────────────────────────────────┐  ║
-║  │                    SAIL CORE ENGINE                                   │  ║
-║  │              (Self-Adapting Intelligent Layout)                       │  ║
-║  │                                                                       │  ║
-║  │  ┌─────────────────────────────────────────────────────────────────┐  │  ║
-║  │  │                  BRAIN LAYER (ML Runtime)                       │  │  ║
-║  │  │                                                                 │  │  ║
-║  │  │   Access Pattern     Query Pattern      Workload                │  │  ║
-║  │  │   Analyzer     ───▶  Classifier   ───▶  Predictor              │  │  ║
-║  │  │                                              │                  │  │  ║
-║  │  │                              ┌───────────────┤                  │  │  ║
-║  │  │                              ▼               ▼                  │  │  ║
-║  │  │                     Index Advisor    Layout Optimizer           │  │  ║
-║  │  │                     (add/drop idx)  (row↔col↔pax)              │  │  ║
-║  │  └─────────────────────────────────────────────────────────────────┘  │  ║
-║  │                                    │                                  │  ║
-║  │  ┌─────────────────────────────────▼───────────────────────────────┐  │  ║
-║  │  │              QUANTUM-INSPIRED QUERY SCHEDULER                   │  │  ║
-║  │  │                                                                 │  │  ║
-║  │  │   Query ──▶ [Superposition Planner]                             │  │  ║
-║  │  │                    │                                            │  │  ║
-║  │  │      ┌─────────────┼─────────────┐                             │  │  ║
-║  │  │      ▼             ▼             ▼                             │  │  ║
-║  │  │   Plan A        Plan B        Plan C    (parallel eval)        │  │  ║
-║  │  │   Index scan    Full scan     Columnar                         │  │  ║
-║  │  │      │             │             │                             │  │  ║
-║  │  │      └─────────────┴─────────────┘                             │  │  ║
-║  │  │                    │                                            │  │  ║
-║  │  │            [Collapse: fastest wins]                             │  │  ║
-║  │  └─────────────────────────────────────────────────────────────────┘  │  ║
-║  │                                    │                                  │  ║
-║  │  ┌─────────────────────────────────▼───────────────────────────────┐  │  ║
-║  │  │                   NOVA STORAGE FORMAT (NSF)                     │  │  ║
-║  │  │                                                                 │  │  ║
-║  │  │   Unified format yang bisa berubah shape secara online          │  │  ║
-║  │  │                                                                 │  │  ║
-║  │  │   ┌─────────────────────────────────────────────────────────┐  │  │  ║
-║  │  │   │  MORPHIC PAGE (8KB)                                     │  │  │  ║
-║  │  │   │                                                         │  │  │  ║
-║  │  │   │  ┌──────┬─────────────────────────────────────────┐    │  │  │  ║
-║  │  │   │  │Header│  Shape Descriptor (4 bits per column)   │    │  │  │  ║
-║  │  │   │  ├──────┴─────────────────────────────────────────┤    │  │  │  ║
-║  │  │   │  │                                                 │    │  │  │  ║
-║  │  │   │  │  ROW mode: [r0][r1][r2]...[rN]                 │    │  │  │  ║
-║  │  │   │  │     atau                                        │    │  │  │  ║
-║  │  │   │  │  COL mode: [c0_vals][c1_vals]...[cN_vals]      │    │  │  │  ║
-║  │  │   │  │     atau                                        │    │  │  │  ║
-║  │  │   │  │  PAX mode: [c0|c1|c2 per row-group]            │    │  │  │  ║
-║  │  │   │  │     atau                                        │    │  │  │  ║
-║  │  │   │  │  DELTA mode: [base_page_ref][deltas]           │    │  │  │  ║
-║  │  │   │  │                                                 │    │  │  │  ║
-║  │  │   │  └─────────────────────────────────────────────────┘    │  │  │  ║
-║  │  │   │                                                         │  │  │  ║
-║  │  │   │  Shape berubah secara background, zero downtime         │  │  │  ║
-║  │  │   └─────────────────────────────────────────────────────────┘  │  │  ║
-║  │  └─────────────────────────────────────────────────────────────────┘  │  ║
-║  └────────────────────────────────────────────────────────────────────────┘  ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+v1 memiliki gap arsitektur berikut:
+
+  [GAP 1] Tidak ada crash recovery yang jelas
+           → WAL + checkpoint protocol tidak didefinisikan
+           → v2: Nova WAL dengan atomic group commit
+
+  [GAP 2] Speculative Raft tanpa rollback protocol eksplisit
+           → Bisa data loss pada network partition
+           → v2: Speculative commit dengan fencing token + compensation log
+
+  [GAP 3] SAIL Brain tidak ada feedback loop dari hasil decision
+           → Model tidak belajar dari kesalahan layout decision
+           → v2: SAIL dengan closed-loop learning + cost accounting
+
+  [GAP 4] Multi-tenancy tidak aman secara memory
+           → 10K projects berbagi proses → noisy neighbor
+           → v2: Isolasi per-project via Landlock + cgroup v2 + memfd_secret
+
+  [GAP 5] Tidak ada debugging & audit layer
+           → Black box untuk operator
+           → v2: Nova Trace — full query lineage, causal replay
+
+  [GAP 6] SDK tidak ada offline support
+           → Tidak bisa pakai tanpa internet
+           → v2: CRDT-first SDK dengan embedded SQLite bridge
+
+  [GAP 7] Semantic Engine tidak bisa diaudit outputnya
+           → LLM generate schema yang tidak transparan
+           → v2: Every LLM decision dicatat, bisa di-review dan di-override
+
+  [GAP 8] Compression tidak adaptive per kolom
+           → Zstd untuk semua → tidak optimal
+           → v2: Per-column codec selection berdasarkan data statistics
 ```
 
 ---
 
-## 🧬 SAIL: Self-Adapting Intelligent Layout
+## Arsitektur v2: Complete Stack
+
+```
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                      ║
+║                              N O V A B Y T E  v2                                    ║
+║                     Evolutionary Database Infrastructure                             ║
+║                                                                                      ║
+║  ┌──────────────────────────────────────────────────────────────────────────────┐   ║
+║  │  LAYER 0 — DEVELOPER PORTAL & SEMANTIC GATEWAY                               │   ║
+║  │                                                                              │   ║
+║  │  ┌─────────────────┐  ┌──────────────────┐  ┌───────────────────────────┐  │   ║
+║  │  │  Semantic Engine │  │  Multi-Protocol  │  │  Audit & Compliance Gate  │  │   ║
+║  │  │  (LLM + Schema  │  │  (SQL/GQL/REST/  │  │  (every request logged,   │  │   ║
+║  │  │   Generator)    │  │   WS/SDK/NL)     │  │   signed, traceable)      │  │   ║
+║  │  └────────┬────────┘  └────────┬─────────┘  └─────────────┬─────────────┘  │   ║
+║  │           └───────────────────┬┘                           │                │   ║
+║  │                               ▼                            │                │   ║
+║  │                     [Nova Protocol Gateway]                │                │   ║
+║  │                     QUIC/TLS 1.3 + WebTransport           │                │   ║
+║  └───────────────────────────────┬────────────────────────────┘                    ║
+║                                  │                                                  ║
+║  ┌───────────────────────────────▼──────────────────────────────────────────────┐  ║
+║  │  LAYER 1 — GLOBAL MESH (Edge Intelligence)                                   │  ║
+║  │                                                                              │  ║
+║  │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌──────────┐  │  ║
+║  │  │ PoP: US-W │  │ PoP: EU-C │  │ PoP: AP-SE│  │ PoP: ME  │  │ PoP: SA  │  │  ║
+║  │  │           │  │           │  │           │  │           │  │          │  │  ║
+║  │  │ • L1 Auth │  │ • L1 Auth │  │ • L1 Auth │  │ • L1 Auth │  │ • L1 Auth│  │  ║
+║  │  │ • EdgeKV  │  │ • EdgeKV  │  │ • EdgeKV  │  │ • EdgeKV  │  │ • EdgeKV │  │  ║
+║  │  │ • WASM Fn │  │ • WASM Fn │  │ • WASM Fn │  │ • WASM Fn │  │ • WASM Fn│  │  ║
+║  │  │ • Geo-DNS │  │ • Geo-DNS │  │ • Geo-DNS │  │ • Geo-DNS │  │ • Geo-DNS│  │  ║
+║  │  │ • RateGrd │  │ • RateGrd │  │ • RateGrd │  │ • RateGrd │  │ • RateGrd│  │  ║
+║  │  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └────┬─────┘  │  ║
+║  │        └──────────────┴──────────────┴──────────────┴──────────────┘         │  ║
+║  │                              QUIC Mesh (mTLS, multipath)                     │  ║
+║  └──────────────────────────────────┬───────────────────────────────────────────┘  ║
+║                                     │                                               ║
+║  ┌──────────────────────────────────▼───────────────────────────────────────────┐  ║
+║  │  LAYER 2 — SAIL CORE ENGINE v2                                               │  ║
+║  │                                                                              │  ║
+║  │  ┌────────────────────────────────────────────────────────────────────────┐  │  ║
+║  │  │  BRAIN v2 (Closed-Loop ML)                                             │  │  ║
+║  │  │                                                                        │  │  ║
+║  │  │   Observe → Classify → Decide → Execute → Measure → Learn             │  │  ║
+║  │  │      ↑                                                    │           │  │  ║
+║  │  │      └────────────────── feedback loop ───────────────────┘           │  │  ║
+║  │  └────────────────────────────────────────────────────────────────────────┘  │  ║
+║  │  ┌────────────────────────────────────────────────────────────────────────┐  │  ║
+║  │  │  QUERY ENGINE v2                                                       │  │  ║
+║  │  │                                                                        │  │  ║
+║  │  │  Parser → Binder → Planner → [Superposition Scheduler] → Executor    │  │  ║
+║  │  │                                        │                              │  │  ║
+║  │  │                          ┌─────────────┼──────────┐                  │  │  ║
+║  │  │                       Plan A         Plan B     Plan C               │  │  ║
+║  │  │                       (JIT)         (Vectorized) (Adaptive)          │  │  ║
+║  │  └────────────────────────────────────────────────────────────────────────┘  │  ║
+║  │  ┌────────────────────────────────────────────────────────────────────────┐  │  ║
+║  │  │  TRANSACTION ENGINE v2 (MVCC + NovaRaft v2)                           │  │  ║
+║  │  │                                                                        │  │  ║
+║  │  │  Write Path:  Client → WAL Group Commit → Apply → Raft Pipeline       │  │  ║
+║  │  │  Read Path:   Snapshot Isolation → MVCC Chain → Page Cache            │  │  ║
+║  │  │  Recovery:    Checkpoint + WAL Replay + Compensation Log              │  │  ║
+║  │  └────────────────────────────────────────────────────────────────────────┘  │  ║
+║  │  ┌────────────────────────────────────────────────────────────────────────┐  │  ║
+║  │  │  NSF v2 (Nova Storage Format — Adaptive Codec)                        │  │  ║
+║  │  │                                                                        │  │  ║
+║  │  │  MorphicPage → ColumnStats → CodecSelector → [Compressed Block]      │  │  ║
+║  │  │  Shape: ROW | COL | PAX | DELTA | SPARSE | FROZEN | VECTOR           │  │  ║
+║  │  │  Codec: per-column (Integer BP | Dictionary | Gorilla | FSST | LZ4)  │  │  ║
+║  │  └────────────────────────────────────────────────────────────────────────┘  │  ║
+║  └──────────────────────────────────────────────────────────────────────────────┘  ║
+║                                                                                      ║
+║  ┌──────────────────────────────────────────────────────────────────────────────┐  ║
+║  │  LAYER 3 — OPERATIONS PLANE                                                  │  ║
+║  │                                                                              │  ║
+║  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────────┐  │  ║
+║  │  │  Nova Trace  │  │ Nova Insight │  │  Provisioner  │  │  Chaos Guard   │  │  ║
+║  │  │ (full audit) │  │ (real metrics│  │  (auto-scale) │  │ (fault inject) │  │  ║
+║  │  └──────────────┘  └──────────────┘  └──────────────┘  └────────────────┘  │  ║
+║  └──────────────────────────────────────────────────────────────────────────────┘  ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## SAIL Brain v2: Closed-Loop Intelligence
 
 ```rust
-// Inovasi #1: Database yang berubah sendiri
+/// v1 masalah: SAIL memutuskan tapi tidak pernah tahu hasilnya.
+/// v2 fix: setiap decision menghasilkan CostProbe yang measure dampaknya.
+/// Model belajar dari keberhasilan DAN kegagalan decision sendiri.
 
-/// Brain layer — berjalan sebagai background task
-/// Total memory: < 8MB (model + runtime)
-pub struct SAILBrain {
-    /// Lightweight ML model untuk classify workload
-    /// Bukan neural network besar — decision tree + linear model
-    /// Inference: < 100ns
-    workload_classifier: WorkloadClassifier,
-    
-    /// Access pattern tracker per collection
-    /// Menggunakan Count-Min Sketch (probabilistic, memory efficient)
-    pattern_tracker: PatternTracker,
-    
-    /// Index advisor: kapan tambah/hapus index
+pub struct SAILBrainV2 {
+    /// Workload classifier: Decision Tree + Linear ensemble
+    /// Inference: < 50ns, size: 256KB
+    classifier: WorkloadClassifier,
+
+    /// Pattern tracker per collection
+    /// Count-Min Sketch + HyperLogLog untuk cardinality
+    patterns: PatternTracker,
+
+    /// Index advisor dengan cost model berbasis histograms
     index_advisor: IndexAdvisor,
-    
-    /// Layout optimizer: kapan ubah storage shape
-    layout_optimizer: LayoutOptimizer,
+
+    /// Layout optimizer
+    layout_optimizer: LayoutOptimizerV2,
+
+    /// Feedback store: setiap decision → outcome
+    /// Digunakan untuk update bobot classifier secara online
+    feedback: FeedbackStore,
+
+    /// Circuit breaker: jika SAIL terlalu agresif → freeze
+    /// Mencegah thrashing (terus-menerus ganti layout)
+    circuit_breaker: SAILCircuitBreaker,
 }
 
-/// Workload classification: berjalan setiap 100ms
-#[derive(Debug, Clone, Copy)]
-pub enum WorkloadProfile {
-    /// Banyak point lookup, sedikit scan
-    OLTP { write_ratio: f32, avg_result_size: u32 },
-    /// Banyak aggregasi, sedikit write
-    OLAP { scan_ratio: f32, avg_columns_touched: u8 },
-    /// Mix keduanya
-    HTAP { oltp_ratio: f32 },
-    /// Time-series: timestamp-ordered inserts + range scans
-    TimeSeries { insert_rate: u32, lookback_window: Duration },
-    /// Graph-like: banyak join, relationship traversal
-    Graph { avg_join_depth: u8 },
+/// Setiap keputusan yang dibuat SAIL terekam di sini.
+/// Operator bisa melihat WHY setiap optimization terjadi.
+#[derive(Debug, Serialize)]
+pub struct SAILDecision {
+    pub id: Ulid,
+    pub timestamp: SystemTime,
+    pub collection: CollectionId,
+    pub decision_type: DecisionType,
+    pub reason: DecisionReason,       // mengapa diputuskan
+    pub before_profile: WorkloadSnapshot,
+    pub after_profile: Option<WorkloadSnapshot>, // diisi setelah evaluation
+    pub estimated_gain_pct: f32,
+    pub actual_gain_pct: Option<f32>, // diisi setelah pengukuran
+    pub was_beneficial: Option<bool>,  // ground truth
 }
 
-impl SAILBrain {
-    /// Dipanggil setiap query selesai — overhead < 50ns
-    pub fn observe(&self, query: &QueryStats) {
-        // Update Count-Min Sketch dengan pattern ini
-        self.pattern_tracker.record(query);
+pub enum DecisionType {
+    /// Ubah storage layout ROW → PAX → COLUMN
+    LayoutMorph { from: ShapeMode, to: ShapeMode },
+    /// Tambah index pada kolom ini
+    AddIndex { column: ColumnId, index_type: IndexType },
+    /// Hapus index yang tidak pernah dipakai (90 hari)
+    DropIndex { index_id: IndexId, last_used: SystemTime },
+    /// Ubah kompresi codec untuk kolom ini
+    ChangeCodec { column: ColumnId, from: Codec, to: Codec },
+    /// Partisi ulang data berdasarkan access pattern
+    RepartitionByColumn { column: ColumnId },
+}
+
+impl SAILBrainV2 {
+    /// Dipanggil setelah setiap query selesai. Overhead < 30ns.
+    #[inline]
+    pub fn observe(&self, stats: &QueryStats) {
+        self.patterns.record(stats);
         
-        // Jika ada cukup data → re-evaluate layout
-        if self.pattern_tracker.sample_count() % 10_000 == 0 {
-            tokio::spawn(self.evaluate_layout());
+        // Setiap N query → check apakah ada decision pending yang bisa dievaluasi
+        if stats.query_count % 1_000 == 0 {
+            self.feedback.evaluate_pending_decisions();
+        }
+        
+        // Setiap 10K query → full brain cycle
+        if stats.query_count % 10_000 == 0 {
+            let brain = self.clone_ref();
+            tokio::spawn(async move { brain.run_cycle().await });
         }
     }
-    
-    /// Background: putuskan apakah perlu ubah layout
-    async fn evaluate_layout(&self) {
-        let profile = self.workload_classifier.classify(
-            &self.pattern_tracker.snapshot()
-        );
-        
-        match profile {
-            // OLTP: pastikan semua primary keys punya ART index
-            // Remove columnar pages untuk tabel kecil
-            WorkloadProfile::OLTP { .. } => {
-                self.layout_optimizer.optimize_for_oltp().await;
-            }
-            
-            // OLAP: convert row pages ke columnar
-            // Build zone maps untuk column pruning
-            WorkloadProfile::OLAP { avg_columns_touched, .. } => {
-                self.layout_optimizer
-                    .convert_to_columnar(avg_columns_touched)
-                    .await;
-            }
-            
-            // TimeSeries: gunakan DELTA mode + Gorilla encoding
-            WorkloadProfile::TimeSeries { .. } => {
-                self.layout_optimizer.optimize_for_timeseries().await;
-            }
-            
-            _ => {} // sudah optimal
+
+    async fn run_cycle(&self) {
+        // 1. Classify current workload
+        let snapshot = self.patterns.snapshot();
+        let profile = self.classifier.classify(&snapshot);
+
+        // 2. Circuit breaker: jika baru saja ada decision yang buruk → skip
+        if self.circuit_breaker.is_open() {
+            tracing::info!(
+                reason = "circuit_breaker_open",
+                "SAIL skipping cycle: recent decisions were not beneficial"
+            );
+            return;
         }
-    }
-}
 
-/// Layout conversion: zero-downtime, background
-/// Reads tetap bisa jalan selama konversi
-pub struct LayoutOptimizer {
-    // Shadow write: tulis format baru sambil baca format lama
-    // Atomic swap ketika selesai
-}
-```
+        // 3. Generate candidate decisions
+        let candidates = self.generate_decisions(&profile, &snapshot);
 
----
+        // 4. Filter: hanya execute jika estimated gain > threshold
+        for decision in candidates {
+            if decision.estimated_gain_pct < SAIL_MIN_GAIN_THRESHOLD {
+                continue;
+            }
 
-## ⚛️ Quantum-Inspired Query Scheduler
+            // 5. Log decision SEBELUM eksekusi (full auditability)
+            let decision_id = self.feedback.record_pending(&decision);
+            tracing::info!(
+                decision_id = %decision_id,
+                collection = %decision.collection,
+                decision = ?decision.decision_type,
+                estimated_gain_pct = decision.estimated_gain_pct,
+                "SAIL executing optimization decision"
+            );
 
-```rust
-// Inovasi #2: Superposition query execution
-
-/// Evaluasi multiple query plans secara parallel
-/// Cancel yang kalah, ambil yang menang
-/// Mirip speculatif execution di CPU, tapi untuk queries
-
-pub struct SuperpositionScheduler {
-    /// Thread pool per execution "universe"
-    universes: Vec<ExecutionUniverse>,
-    /// Budget CPU untuk speculation
-    /// Jika query simple → tidak speculate (overhead tidak worth it)
-    speculation_budget: SpeculationBudget,
-}
-
-pub struct QuerySuperposition {
-    /// Query yang sama, execution plans berbeda
-    plans: SmallVec<[ExecutionPlan; 3]>,
-    /// Shared cancellation token
-    cancel: CancellationGroup,
-    /// Result dari plan yang menang
-    winner: Arc<OnceLock<QueryResult>>,
-}
-
-impl SuperpositionScheduler {
-    pub async fn execute(&self, query: Query) -> QueryResult {
-        // Untuk query sederhana: langsung execute, no speculation
-        if query.estimated_cost() < SPECULATION_THRESHOLD {
-            return self.execute_single(query).await;
-        }
-        
-        // Generate multiple plans
-        let plans = self.planner.generate_candidates(&query, max: 3);
-        
-        let cancel = CancellationGroup::new();
-        let winner = Arc::new(OnceLock::new());
-        
-        // Launch semua plans secara parallel
-        let handles: Vec<_> = plans.into_iter().map(|plan| {
-            let cancel = cancel.clone();
-            let winner = winner.clone();
-            
-            tokio::spawn(async move {
-                // Jalankan plan ini
-                let result = execute_plan(plan, cancel.token()).await;
-                
-                // Siapapun yang selesai duluan: set winner
-                if winner.set(result).is_ok() {
-                    // Kita yang menang — cancel semua lainnya
-                    cancel.cancel_all();
+            // 6. Execute dengan rollback safety
+            match self.execute_decision(&decision).await {
+                Ok(_) => {
+                    // 7. Schedule measurement setelah 5 menit
+                    self.feedback.schedule_measurement(decision_id, Duration::from_secs(300));
                 }
-            })
-        }).collect();
-        
-        // Tunggu winner
-        join_first(handles).await;
-        Arc::try_unwrap(winner).unwrap().into_inner().unwrap()
+                Err(e) => {
+                    self.feedback.mark_failed(decision_id, &e);
+                    self.circuit_breaker.record_failure();
+                }
+            }
+        }
     }
 }
 
-/// Speculation hanya worth it jika:
-/// • Query cost > 1ms estimated
-/// • Plans punya cost estimate berbeda > 2x
-/// • Ada idle CPU capacity
-/// • Query bukan write (write tidak bisa dispeculate)
-pub struct SpeculationBudget {
-    /// Max 20% CPU untuk speculation
-    cpu_budget: AtomicF32,
-    /// Adaptive: jika speculation sering kalah → reduce budget
-    win_rate_tracker: ExponentialMovingAverage,
+/// Circuit breaker: cegah thrashing
+pub struct SAILCircuitBreaker {
+    /// Jika 3 decisions terakhir tidak beneficial → open circuit
+    recent_outcomes: RingBuffer<bool, 10>,
+    /// Jika open: cooldown 30 menit sebelum coba lagi
+    opened_at: Option<Instant>,
 }
 ```
 
 ---
 
-## 🤖 Semantic API Layer
+## NSF v2: Adaptive Per-Column Compression
 
 ```rust
-// Inovasi #3: Zero-schema developer experience
+/// v1 masalah: satu codec untuk semua kolom → suboptimal.
+/// v2: setiap kolom mendapat codec yang paling sesuai data statistiknya.
+/// Keputusan ini juga dicatat dan bisa diaudit.
 
-/// Developer describe data dalam bahasa apapun
-/// NovaByte generate segalanya secara otomatis
-
-pub struct SemanticEngine {
-    /// Tiny embedded LLM: Phi-3 mini 3.8B quantized (INT4)
-    /// RAM: ~2GB, Inference: ~50ms, berjalan lokal
-    llm: Arc<EmbeddedLLM>,
-    /// Schema registry
-    schemas: SchemaRegistry,
-    /// API generator
-    api_gen: APIGenerator,
+/// Per-column statistics — dikumpulkan selama write, diupdate incremental
+#[derive(Debug, Clone, Serialize)]
+pub struct ColumnStats {
+    pub null_ratio: f32,           // berapa persen NULL
+    pub cardinality_estimate: u64, // HyperLogLog estimate
+    pub min_val: ScalarValue,
+    pub max_val: ScalarValue,
+    pub is_monotonic: bool,        // timestamps, auto-increment IDs
+    pub value_range: u64,          // max - min (untuk integer encoding)
+    pub avg_run_length: f32,       // untuk RLE detection
+    pub value_type: ValueType,     // detected type: Int | Float | Text | Binary | Bool
 }
 
-/// Input dari developer:
-/// "I need to track e-commerce orders. Each order belongs to a user,
-///  has multiple items, shipping address, and payment status"
-///
-/// Output otomatis:
-///  - Schema: users, orders, order_items, addresses, payments
-///  - Foreign keys & indexes otomatis
-///  - RLS policies: users hanya lihat order mereka
-///  - REST endpoints
-///  - TypeScript types
-///  - SDK methods
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub enum Codec {
+    /// Integer columns, low cardinality atau monotonic
+    BitPacking { bits: u8 },
+    /// Sangat low cardinality (< 65K unique values)
+    Dictionary,
+    /// Float time-series (XOR-delta ala Gorilla / Prometheus)
+    GorillaFloat,
+    /// Text columns dengan banyak repeated substrings
+    FSST,
+    /// Semua kolom — fallback, general purpose
+    Zstd { level: i32 },
+    /// Ultra-fast, untuk hot data yang sering diakses
+    Lz4,
+    /// Constant column — satu nilai untuk semua rows
+    Constant,
+    /// Sparse: mayoritas NULL
+    SparseRLE,
+    /// Boolean columns
+    Bitset,
+}
 
-impl SemanticEngine {
+pub struct CodecSelector;
+
+impl CodecSelector {
+    /// Pilih codec optimal berdasarkan statistics.
+    /// Deterministik: sama input → sama output (bisa ditest & diaudit)
+    pub fn select(stats: &ColumnStats) -> Codec {
+        // Boolean: selalu bitset
+        if stats.value_type == ValueType::Bool {
+            return Codec::Bitset;
+        }
+
+        // Constant column
+        if stats.cardinality_estimate == 1 {
+            return Codec::Constant;
+        }
+
+        // Sparse: mayoritas NULL
+        if stats.null_ratio > 0.8 {
+            return Codec::SparseRLE;
+        }
+
+        // Integer dengan range kecil → bit packing
+        if stats.value_type == ValueType::Int {
+            let bits_needed = (stats.value_range as f64).log2().ceil() as u8;
+            if bits_needed <= 32 {
+                return Codec::BitPacking { bits: bits_needed };
+            }
+        }
+
+        // Float monotonic time-series → Gorilla
+        if stats.value_type == ValueType::Float && stats.is_monotonic {
+            return Codec::GorillaFloat;
+        }
+
+        // Text dengan low cardinality → dictionary
+        if stats.value_type == ValueType::Text && stats.cardinality_estimate < 65_536 {
+            return Codec::Dictionary;
+        }
+
+        // Text dengan repeated substrings → FSST
+        if stats.value_type == ValueType::Text {
+            return Codec::FSST;
+        }
+
+        // Hot data (frequently accessed) → Lz4 (speed > ratio)
+        // Cold/frozen data → Zstd level 19 (ratio > speed)
+        // Default
+        Codec::Zstd { level: 3 }
+    }
+}
+
+/// MorphicPage v2: tambah VECTOR mode untuk AI workloads
+#[repr(u8)]
+pub enum ShapeMode {
+    Row    = 0,   // NSM: OLTP, point lookups
+    Column = 1,   // DSM: OLAP, column scans
+    PAX    = 2,   // PAX: HTAP, mixed
+    Delta  = 3,   // Delta dari base page: update-heavy tables
+    Sparse = 4,   // Nullable dominant
+    Frozen = 5,   // Immutable, maximum compression
+    Vector = 6,   // Dense float32/float16 untuk similarity search (HNSW)
+    TimeSeries = 7, // Timestamp-ordered, Gorilla encoding seluruh page
+}
+```
+
+---
+
+## WAL v2: Atomic Group Commit + Point-in-Time Recovery
+
+```rust
+/// v1 tidak mendefinisikan recovery protocol → gap kritis.
+/// v2: WAL dengan atomic group commit + full PITR support.
+
+/// Write-Ahead Log entry
+#[repr(C)]
+pub struct WalEntry {
+    pub lsn: u64,               // log sequence number, monotonic
+    pub collection_id: u32,
+    pub transaction_id: u64,
+    pub entry_type: WalEntryType,
+    pub payload_len: u32,
+    pub checksum: u32,          // CRC32C hardware accelerated
+    // followed by payload bytes
+}
+
+pub enum WalEntryType {
+    Begin,
+    Write { page_id: u64, offset: u16, len: u16 },
+    Delete { page_id: u64, slot: u16 },
+    Commit { timestamp: u64 },
+    Abort,
+    Checkpoint { lsn_start: u64 },   // snapshot point untuk truncation
+    SchemaChange { version: u32 },
+}
+
+/// Group commit: batch multiple transactions dalam satu fsync
+/// Latency tambah sedikit, throughput naik drastis
+pub struct WalGroupCommit {
+    /// Buffer untuk entries yang belum di-fsync
+    pending: Mutex<Vec<WalEntry>>,
+    /// Notifier untuk transactions yang menunggu commit
+    notify: Notify,
+    /// Background flusher
+    flush_interval: Duration, // default: 1ms
+}
+
+impl WalGroupCommit {
+    /// Writer memanggil ini, lalu menunggu flush
+    pub async fn append_and_wait(&self, entry: WalEntry) -> Result<u64> {
+        let lsn = {
+            let mut pending = self.pending.lock();
+            let lsn = entry.lsn;
+            pending.push(entry);
+            lsn
+        };
+
+        // Tunggu sampai batch ini di-fsync
+        self.notify.notified().await;
+        Ok(lsn)
+    }
+
+    /// Background task: flush setiap interval atau jika buffer penuh
+    async fn flush_loop(&self) {
+        loop {
+            tokio::time::sleep(self.flush_interval).await;
+
+            let batch = {
+                let mut pending = self.pending.lock();
+                std::mem::take(&mut *pending)
+            };
+
+            if batch.is_empty() { continue; }
+
+            // Single fsync untuk seluruh batch
+            self.wal_file.write_batch(&batch).await?;
+            self.wal_file.fsync().await?;
+
+            // Notify semua waiter
+            self.notify.notify_waiters();
+        }
+    }
+}
+
+/// Point-in-Time Recovery
+pub struct PITRManager {
+    /// WAL segments disimpan di object storage (S3-compatible)
+    /// Retention: 30 hari default, configurable
+    segment_store: Arc<ObjectStore>,
+
+    /// Base snapshots setiap 1 jam
+    snapshot_interval: Duration,
+}
+
+impl PITRManager {
+    /// Recover ke timestamp apapun dalam retention window
+    /// Output: database state persis seperti di titik waktu itu
+    pub async fn recover_to(&self, target: SystemTime) -> Result<()> {
+        // 1. Temukan snapshot terdekat sebelum target
+        let snapshot = self.find_nearest_snapshot(target).await?;
+
+        // 2. Restore snapshot
+        self.restore_snapshot(&snapshot).await?;
+
+        // 3. Replay WAL dari snapshot sampai target timestamp
+        let segments = self.segment_store
+            .list_after(snapshot.timestamp)
+            .await?;
+
+        for segment in segments {
+            for entry in segment.entries() {
+                if entry.timestamp > target { break; }
+                self.apply_wal_entry(&entry).await?;
+            }
+        }
+
+        tracing::info!(
+            target = ?target,
+            base_snapshot = ?snapshot.timestamp,
+            "PITR recovery complete"
+        );
+
+        Ok(())
+    }
+}
+```
+
+---
+
+## NovaRaft v2: Safe Speculative Commits
+
+```rust
+/// v1 masalah: speculative commit tanpa rollback protocol eksplisit.
+/// v2: setiap speculative commit punya fencing token + compensation log.
+/// Jika replication gagal, state machine bisa rollback dengan aman.
+
+pub struct NovaRaftV2 {
+    state: RaftState,
+
+    /// Speculative buffer: entries yang sudah di-apply tapi belum di-majority-ack
+    /// Key: log_index, Value: speculatively applied entry + compensation
+    speculative: BTreeMap<u64, SpeculativeEntry>,
+
+    /// Log pipeline: multiple in-flight entries ke followers
+    /// Window size: 128 entries (adaptive berdasarkan RTT)
+    pipeline: LogPipeline<128>,
+
+    /// Fencing: setiap speculative entry punya monotonic token
+    /// Client yang menyimpan hasil speculative harus validasi token ini
+    fencing: FencingTokenIssuer,
+}
+
+pub struct SpeculativeEntry {
+    pub entry: LogEntry,
+    pub applied_at: Instant,
+    /// Cara untuk membatalkan efek entry ini jika rollback diperlukan
+    pub compensation: CompensationAction,
+    /// Client yang harus dinotifikasi jika rollback terjadi
+    pub client_callbacks: Vec<ClientCallback>,
+}
+
+pub enum CompensationAction {
+    /// Delete rows yang di-insert
+    DeleteRows { page_id: u64, row_ids: SmallVec<[u32; 8]> },
+    /// Restore nilai sebelumnya (untuk UPDATE)
+    RestoreValues { page_id: u64, before_image: Bytes },
+    /// Re-insert rows yang di-delete
+    ReinsertRows { page_id: u64, row_data: Bytes },
+}
+
+impl NovaRaftV2 {
+    pub async fn propose_speculative(
+        &self,
+        entry: LogEntry,
+    ) -> Result<SpeculativeCommitHandle> {
+        // 1. Pastikan kita masih leader
+        self.assert_leader()?;
+
+        // 2. Tulis ke WAL dengan group commit
+        let lsn = self.wal.append_and_wait(entry.clone()).await?;
+
+        // 3. Capture before-image untuk compensation
+        let compensation = self.capture_compensation(&entry);
+
+        // 4. Apply ke state machine (speculative)
+        self.state_machine.apply_speculative(&entry);
+
+        // 5. Catat di speculative buffer
+        let token = self.fencing.issue();
+        self.speculative.insert(lsn, SpeculativeEntry {
+            entry: entry.clone(),
+            applied_at: Instant::now(),
+            compensation,
+            client_callbacks: vec![],
+        });
+
+        // 6. Kirim ke followers secara async (tidak blocking)
+        self.pipeline.submit(entry, lsn);
+
+        // 7. Return handle — client bisa gunakan SEKARANG
+        // Handle otomatis "committed" jika majority ack dalam N ms
+        // Handle otomatis "rolled back" jika gagal
+        Ok(SpeculativeCommitHandle {
+            lsn,
+            fencing_token: token,
+            raft: self.weak_ref(),
+        })
+    }
+
+    /// Dipanggil ketika majority ack diterima
+    pub fn confirm_speculative(&self, lsn: u64) {
+        if let Some(entry) = self.speculative.remove(&lsn) {
+            // Entry sekarang resmi committed
+            // Notifikasi client: entry ini permanent
+            for cb in entry.client_callbacks {
+                cb.on_confirmed();
+            }
+        }
+    }
+
+    /// Dipanggil ketika replication gagal (network partition, node crash)
+    pub async fn rollback_speculative(&self, from_lsn: u64) {
+        // Rollback dari LSN tertinggi ke bawah (LIFO order)
+        let to_rollback: Vec<_> = self.speculative
+            .range(from_lsn..)
+            .rev()
+            .collect();
+
+        for (lsn, entry) in to_rollback {
+            tracing::warn!(
+                lsn = lsn,
+                collection = %entry.entry.collection_id,
+                "Rolling back speculative entry due to replication failure"
+            );
+
+            self.apply_compensation(&entry.compensation).await;
+
+            for cb in &entry.client_callbacks {
+                cb.on_rolled_back();
+            }
+
+            self.speculative.remove(lsn);
+        }
+    }
+}
+```
+
+---
+
+## Multi-Tenancy: Memory-Safe Isolation
+
+```rust
+/// v1 tidak membahas isolasi antar-tenant.
+/// v2: setiap project mendapat isolasi berlapis.
+
+/// Isolasi model: bukan proses terpisah (terlalu mahal),
+/// bukan thread terpisah (tidak cukup isolasi),
+/// tetapi "isolated execution context" — lightweight, enforced by kernel.
+
+pub struct TenantIsolation {
+    /// Cgroup v2: batasi CPU, memory, IO per project
+    cgroup: CgroupV2Handle,
+
+    /// Landlock: restrict filesystem access ke direktori project saja
+    landlock: LandlockRuleset,
+
+    /// memfd_secret: memory tidak bisa di-dump oleh proses lain
+    /// Digunakan untuk menyimpan encryption keys + auth tokens
+    secret_memory: MemfdSecret,
+
+    /// Per-tenant memory allocator
+    /// Mencegah memory leak di satu tenant mempengaruhi tenant lain
+    allocator: TenantArena,
+
+    /// Quota enforcement
+    quotas: TenantQuotas,
+}
+
+pub struct TenantQuotas {
+    pub max_storage_bytes: u64,
+    pub max_requests_per_second: u32,
+    pub max_concurrent_connections: u32,
+    pub max_query_execution_ms: u64,  // kill query yang terlalu lama
+    pub max_memory_bytes: u64,
+    pub max_realtime_subscriptions: u32,
+}
+
+/// Setiap request membawa TenantContext
+/// Semua operasi secara otomatis terisolasi
+pub struct TenantContext {
+    pub project_id: ProjectId,
+    pub user_id: Option<UserId>,
+    pub session_token: SessionToken,
+    pub quotas: Arc<TenantQuotas>,
+    pub isolation: Arc<TenantIsolation>,
+    
+    /// Audit trail untuk request ini
+    pub trace: RequestTrace,
+}
+```
+
+---
+
+## Nova Trace: Full Auditability
+
+```rust
+/// v1 tidak ada audit layer.
+/// v2: setiap query, mutation, schema change, SAIL decision, dan auth event
+/// terekam dalam immutable append-only audit log.
+/// Operator bisa replay, inspect, dan debug APAPUN.
+
+/// Setiap event dalam sistem mengimplementasi trait ini
+pub trait AuditEvent: Serialize {
+    fn event_type(&self) -> &'static str;
+    fn project_id(&self) -> ProjectId;
+    fn severity(&self) -> Severity;
+    fn timestamp(&self) -> SystemTime;
+}
+
+/// Contoh: query audit event
+#[derive(Debug, Serialize)]
+pub struct QueryAuditEvent {
+    pub trace_id: Ulid,
+    pub project_id: ProjectId,
+    pub user_id: Option<UserId>,
+    pub timestamp: SystemTime,
+    pub query_text: String,        // query asli yang dikirim
+    pub normalized_query: String,  // setelah parsing & normalization
+    pub execution_plan: ExecutionPlan,
+    pub duration_us: u64,
+    pub rows_scanned: u64,
+    pub rows_returned: u64,
+    pub bytes_read: u64,
+    pub index_used: Option<IndexId>,
+    pub cache_hit: bool,
+    pub error: Option<QueryError>,
+    /// Apakah query ini di-generate oleh Semantic Engine (LLM)?
+    pub semantic_origin: Option<SemanticOrigin>,
+}
+
+/// Jika query berasal dari LLM → catat input NL dan output SQL
+#[derive(Debug, Serialize)]
+pub struct SemanticOrigin {
+    pub natural_language_input: String,
+    pub generated_sql: String,
+    pub llm_confidence: f32,
+    pub was_overridden: bool, // apakah user edit SQL sebelum execute
+}
+
+pub struct NovaTrace {
+    /// Append-only ring buffer di memory (last 1M events per project)
+    hot_buffer: SegmentedRingBuffer<AuditRecord>,
+
+    /// Persistent store: dikirim ke object storage secara async
+    /// Format: Parquet (queryable via SQL)
+    persistent_store: Arc<TraceArchive>,
+}
+
+impl NovaTrace {
+    /// Emit event — non-blocking, < 100ns overhead
+    pub fn emit(&self, event: impl AuditEvent) {
+        let record = AuditRecord::new(event);
+        self.hot_buffer.push(record);
+        // Background goroutine drain ke persistent store
+    }
+
+    /// Query audit log dengan SQL (meta-query)
+    /// Sangat berguna untuk debugging & compliance
+    pub async fn query(&self, sql: &str) -> Result<QueryResult> {
+        // Execute SQL langsung di atas audit Parquet files
+        self.persistent_store.query_parquet(sql).await
+    }
+
+    /// Causal replay: reconstruct state database di titik waktu manapun
+    /// Berguna untuk debugging "kenapa data ini berubah?"
+    pub async fn causal_replay(
+        &self,
+        project: ProjectId,
+        target_row: RowId,
+        until: SystemTime,
+    ) -> Vec<AuditRecord> {
+        // Temukan semua events yang menyentuh row ini
+        self.query(&format!(
+            "SELECT * FROM audit_log
+             WHERE project_id = '{project}'
+             AND affected_rows @> ARRAY['{target_row}']
+             AND timestamp <= '{until}'
+             ORDER BY timestamp ASC"
+        )).await
+    }
+}
+```
+
+---
+
+## Semantic Engine v2: Transparent + Auditable LLM
+
+```rust
+/// v1 masalah: LLM adalah black box, developer tidak tahu mengapa
+/// schema digenerate seperti itu.
+/// v2: setiap LLM decision dicatat, bisa di-inspect, bisa di-override.
+
+pub struct SemanticEngineV2 {
+    /// Embedded Phi-3 mini 3.8B INT4 quantized (~2GB RAM)
+    llm: Arc<EmbeddedLLM>,
+
+    /// Schema registry + versioning
+    schemas: SchemaRegistry,
+
+    /// Audit trail untuk semua LLM decisions
+    audit: Arc<NovaTrace>,
+}
+
+pub struct SchemaGenerationResult {
+    pub schema: Schema,
+    pub indexes: Vec<IndexDefinition>,
+    pub rls_policies: Vec<RLSPolicy>,
+    pub sdk_types: GeneratedTypes,
+
+    /// Reasoning trail: mengapa schema ini digenerate
+    /// Operator bisa baca ini untuk memahami keputusan LLM
+    pub reasoning: Vec<ReasoningStep>,
+
+    /// Alternative schemas yang dipertimbangkan tapi tidak dipilih
+    pub alternatives: Vec<AlternativeSchema>,
+
+    /// Confidence score per table/column
+    pub confidence: HashMap<String, f32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ReasoningStep {
+    pub step: u8,
+    pub description: String,        // "Identified entity: User with email (unique)"
+    pub decision: String,           // "Created users table with unique index on email"
+    pub rationale: String,          // "Email appears to be used as login identifier"
+    pub confidence: f32,
+}
+
+impl SemanticEngineV2 {
     pub async fn describe_to_schema(
         &self,
         description: &str,
         project: &Project,
-    ) -> GeneratedOutput {
-        // 1. LLM extract entities & relationships
-        let entities = self.llm.extract_entities(description).await;
-        
-        // 2. Generate normalized schema
-        let schema = self.schema_generator.normalize(entities);
-        
-        // 3. Generate optimal indexes berdasarkan relationship
-        let indexes = self.index_advisor.suggest(&schema);
-        
-        // 4. Generate RLS policies
-        let rls = self.rls_generator.infer(&schema);
-        
-        // 5. Generate SDK types (Rust, TypeScript, Dart)
-        let sdk_types = self.type_generator.generate(&schema);
-        
-        GeneratedOutput { schema, indexes, rls, sdk_types }
+    ) -> Result<SchemaGenerationResult> {
+        // 1. LLM generate schema dengan chain-of-thought prompting
+        let llm_output = self.llm.generate_with_reasoning(
+            SCHEMA_GENERATION_SYSTEM_PROMPT,
+            description,
+        ).await?;
+
+        // 2. Parse output (structured JSON dari LLM)
+        let result = self.parse_llm_schema_output(llm_output)?;
+
+        // 3. PENTING: audit setiap keputusan LLM
+        self.audit.emit(SemanticDecisionEvent {
+            trace_id: Ulid::new(),
+            project_id: project.id,
+            input: description.to_string(),
+            reasoning: result.reasoning.clone(),
+            generated_schema: result.schema.clone(),
+            confidence: result.confidence.clone(),
+        });
+
+        // 4. Tampilkan ke developer — mereka HARUS review & approve
+        // Tidak otomatis di-apply tanpa konfirmasi (safety first)
+        Ok(result)
     }
-    
-    /// Natural language query — tanpa SQL
-    /// "Give me all users who ordered more than $100 last month"
-    pub async fn natural_query(&self, nl: &str) -> QueryResult {
-        let sql = self.llm.nl_to_sql(nl, &self.current_schema()).await;
-        self.execute_query(sql).await
-    }
-}
-```
 
----
-
-## 🗄️ Nova Storage Format (NSF): Morphic Pages
-
-```rust
-// Format storage yang bisa berubah shape secara online
-
-/// Morphic Page: satu format yang represent semua modes
-#[repr(C, align(8192))] // 8KB page (2x dari standard 4KB)
-pub struct MorphicPage {
-    header: MorphicHeader,   // 128 bytes
-    shape_map: ShapeMap,     // 64 bytes: 4 bits per column, max 128 cols
-    data: [u8; 7936],        // sisa untuk data
-}
-
-#[repr(C)]
-pub struct MorphicHeader {
-    magic: u32,              // 0x4E534600 "NSF\0"
-    page_id: u64,
-    collection_id: u32,
-    row_count: u16,
-    schema_version: u16,
-    shape_mode: ShapeMode,   // current layout mode
-    lsn: u64,                // log sequence number
-    checksum: u32,           // CRC32C hardware
-    zone_min: [u64; 4],      // zone map untuk 4 kolom pertama
-    zone_max: [u64; 4],
-    _reserved: [u8; 28],
-}
-
-#[repr(u8)]
-pub enum ShapeMode {
-    Row    = 0,  // NSM: OLTP optimal
-    Column = 1,  // DSM: OLAP optimal  
-    PAX    = 2,  // PAX: HTAP optimal
-    Delta  = 3,  // delta dari base page: update-heavy
-    Sparse = 4,  // nullable columns dominant
-    Frozen = 5,  // immutable, max compression
-}
-
-/// Zero-copy morphing: ubah shape tanpa baca semua data
-impl MorphicPage {
-    /// Row → PAX conversion: background, streaming
-    /// Tidak perlu lock page — gunakan shadow page technique
-    pub fn morph_to_pax(&self, arena: &Arena) -> MorphicPage {
-        let mut new_page = arena.alloc_page();
-        new_page.header = self.header;
-        new_page.header.shape_mode = ShapeMode::PAX;
-        
-        // Re-arrange data: row-major → column-mini-arrays
-        // Menggunakan SIMD gather/scatter instructions
-        unsafe { simd_transpose_to_pax(self, &mut new_page) };
-        
-        new_page
-    }
-    
-    /// Read dispatch: sama API, beda implementation per shape
-    #[inline(always)]
-    pub fn read_column(&self, col: u8, row: u16) -> Option<Value> {
-        // Branch prediction: shape_mode jarang berubah
-        // CPU akan predict ini dengan benar 99.9% waktu
-        match self.header.shape_mode {
-            ShapeMode::Row    => self.read_row_layout(col, row),
-            ShapeMode::Column => self.read_col_layout(col, row),
-            ShapeMode::PAX    => self.read_pax_layout(col, row),
-            ShapeMode::Delta  => self.read_delta_layout(col, row),
-            _ => unreachable!()
-        }
-    }
-}
-```
-
----
-
-## 🔄 Replication: Parallel Raft + Speculative Commits
-
-```rust
-// Raft yang dimodifikasi untuk throughput ekstrem
-
-/// Standard Raft: leader → followers → commit → reply
-/// Latency: 2 RTT minimum
-///
-/// Nova Raft: speculative commit + parallel pipelining
-/// Latency: 1 RTT untuk 95% kasus
-
-pub struct NovaRaft {
-    /// Standard raft state
-    state: RaftState,
-    /// Speculative commit buffer
-    /// Commit sebelum majority ack — rollback jika gagal
-    speculative_buffer: SpecBuffer,
-    /// Pipeline: multiple in-flight log entries
-    pipeline: LogPipeline<128>,
-}
-
-impl NovaRaft {
-    /// Speculative commit: reply ke client lebih cepat
-    /// 95% kasus tidak perlu rollback (stable network)
-    pub async fn propose_speculative(
+    /// Developer bisa override bagian mana saja dari generated schema
+    pub async fn apply_with_override(
         &self,
-        entry: LogEntry,
-    ) -> Result<CommitGuarantee> {
-        // Tulis ke WAL lokal
-        self.wal.append(&entry).await?;
-        
-        // Speculatively apply ke state machine
-        self.state_machine.apply_speculative(&entry);
-        
-        // Kirim ke followers secara parallel
-        let replication = self.replicate_async(entry);
-        
-        // Reply ke client SEKARANG (speculative)
-        // Client dapat response tanpa tunggu majority
-        let guard = CommitGuarantee::Speculative(replication);
-        
-        Ok(guard)
-    }
-    
-    /// Jika replication gagal → rollback + retry
-    /// Client mendapat notifikasi via callback
-}
+        result: SchemaGenerationResult,
+        overrides: Vec<SchemaOverride>,
+        approved_by: UserId,
+    ) -> Result<AppliedSchema> {
+        let final_schema = result.schema.apply_overrides(overrides.clone());
 
-/// Multi-Raft: setiap collection punya Raft group sendiri
-/// Satu cluster 10-node bisa handle 1000 independent Raft groups
-/// Tidak ada single leader bottleneck
-pub struct MultiRaftManager {
-    /// collection_id → Raft group
-    groups: DashMap<CollectionId, Arc<NovaRaft>>,
-    /// Shared network layer — satu koneksi untuk semua groups
-    transport: Arc<RaftTransport>,
+        self.audit.emit(SchemaAppliedEvent {
+            original: result.schema,
+            overrides,
+            final_schema: final_schema.clone(),
+            approved_by,
+            applied_at: SystemTime::now(),
+        });
+
+        self.schemas.apply(final_schema).await
+    }
 }
 ```
 
 ---
 
-## 🌐 Developer SDK: Ergonomic Rust-First
+## SDK v2: Offline-First + CRDT Sync
 
 ```rust
-// SDK yang developer cintai
+/// v1 masalah: SDK tidak bisa offline.
+/// v2: SDK punya embedded local store (SQLite) yang sync via CRDT.
 
-/// Single entry point, zero config
-let nb = NovaByte::from_env(); // baca NOVABYTE_URL + NOVABYTE_KEY
+/// Untuk Rust client
+use novabyte::prelude::*;
 
-// === QUERY API ===
+// Zero config — baca env atau config file
+let nb = NovaByte::builder()
+    .from_env()                        // NOVABYTE_URL + NOVABYTE_KEY
+    .offline_store("./local.db")       // embedded SQLite untuk offline
+    .sync_strategy(SyncStrategy::CRDTMerge)
+    .build()
+    .await?;
 
-// Fluent builder, fully typed
+// === QUERY (ONLINE + OFFLINE) ===
+
+// Online query — fallback ke local cache jika offline
 let users = nb.from("users")
     .select(["id", "name", "email"])
-    .filter(col("age").gt(25).and(col("active").eq(true)))
+    .filter(col("age").gt(25))
     .order_by("created_at", Desc)
     .limit(20)
+    .offline_fallback(OfflineBehavior::UseCache)  // <-- baru di v2
     .fetch::<User>()
     .await?;
 
-// Atau dengan macro untuk zero-boilerplate
-let users = query!(nb, "users" where age > 25 limit 20).await?;
-
-// Natural language (semantic mode)
-let result = nb.ask("users who signed up last week with premium plan")
-    .fetch::<User>()
+// Offline mutation — CRDT-tracked, auto-sync ketika online kembali
+let new_order = nb.from("orders")
+    .insert(Order {
+        user_id: current_user.id,
+        items: cart.items.clone(),
+        status: OrderStatus::Pending,
+    })
+    .conflict_resolution(ConflictResolution::LastWriteWins) // atau Custom
+    .execute()
     .await?;
+// Jika offline: tersimpan di local store, sync ketika online
 
-// === REALTIME ===
+// === REALTIME v2 ===
 
-// Type-safe subscription
+// Realtime dengan built-in reconnect + backpressure
 let mut stream = nb.realtime()
     .table("orders")
-    .filter(col("user_id").eq(current_user_id))
-    .on_insert()
-    .on_update(["status", "tracking_number"]) // hanya field ini
+    .filter(col("user_id").eq(current_user.id))
+    .events([Event::Insert, Event::Update])
+    .buffer_size(100)                  // backpressure: pause jika buffer penuh
+    .reconnect(ReconnectPolicy::ExponentialBackoff {
+        initial: Duration::from_millis(100),
+        max: Duration::from_secs(30),
+        jitter: true,
+    })
     .subscribe::<Order>()
     .await?;
 
 while let Some(event) = stream.next().await {
     match event {
-        RealtimeEvent::Insert(order) => println!("New order: {:?}", order),
+        RealtimeEvent::Insert(order) => handle_new_order(order),
         RealtimeEvent::Update { old, new, changed_fields } => {
-            println!("Order updated: {:?}", changed_fields);
+            // changed_fields berisi HANYA field yang berubah
+            if changed_fields.contains("status") {
+                notify_user(&new.status);
+            }
         }
-        _ => {}
+        RealtimeEvent::Reconnecting { attempt, delay } => {
+            log::info!("Reconnecting (attempt {attempt}, delay {delay:?})");
+        }
     }
 }
 
-// === AUTH ===
+// === AUTH v2 ===
 
-// Built-in providers, zero config
-nb.auth.sign_up_email("user@example.com", "password").await?;
-nb.auth.sign_in_google(id_token).await?;
+// Auth dengan built-in MFA + passkey
+nb.auth.sign_up_email("user@example.com", "password")
+    .with_mfa(MfaMethod::TOTP)
+    .await?;
+
 nb.auth.sign_in_passkey(credential).await?;
 
-// Session auto-refresh, zero boilerplate
-let user = nb.auth.current_user().await?; // always valid or error
+// Session management otomatis
+// Tidak perlu handle token refresh — SDK handles it
+let session = nb.auth.session(); // always valid atau error
+let user = session.user();
 
-// === STORAGE ===
+// === STORAGE v2 ===
 
-// Upload dengan automatic image optimization
-let url = nb.storage
-    .bucket("avatars")
-    .upload("user-123.jpg", file_bytes)
+// Upload dengan progress tracking + resumable
+let upload = nb.storage
+    .bucket("videos")
+    .upload_resumable("video.mp4", file_bytes)
+    .chunk_size(5 * 1024 * 1024)     // 5MB chunks
+    .on_progress(|pct| println!("Upload: {pct}%"))
     .transform(Transform::new()
-        .resize(200, 200)
-        .format(WebP)
-        .quality(85))
+        .video_transcode(VideoQuality::P720)
+        .generate_thumbnail())
     .public()
     .await?;
 
-// === FUNCTIONS ===
+println!("URL: {}", upload.url);
+println!("Thumbnail: {}", upload.thumbnail_url.unwrap());
 
-// Type-safe RPC
-let result = nb.functions
-    .invoke::<SendEmailInput, SendEmailOutput>("send-welcome-email")
-    .with(SendEmailInput { user_id: "123" })
-    .await?;
+// === MIGRATIONS v2 ===
 
-// === MIGRATIONS ===
-
-// Code-first migrations, zero SQL
+// Code-first, typed, rollbackable
 nb.migrate()
-    .create_table("products")
-    .add_column("id", Type::Uuid.primary_key().default_random())
-    .add_column("name", Type::Text.not_null())
-    .add_column("price", Type::Decimal(10, 2).not_null())
-    .add_column("inventory", Type::Int.default(0))
-    .add_index(["name"], Unique)
+    .version(3)
+    .description("Add product inventory tracking")
+    .up(|m| m
+        .create_table("products")
+        .column("id", Type::Uuid.pk().default_random())
+        .column("name", Type::Text.not_null())
+        .column("price", Type::Decimal(10, 2).not_null())
+        .column("inventory", Type::Int.default(0).check("inventory >= 0"))
+        .index(["name"], Unique)
+        .rls(|r| r
+            .select("authenticated")   // siapapun bisa baca
+            .insert("service_role")    // hanya service yang bisa insert
+            .update("service_role"))
+    )
+    .down(|m| m.drop_table("products"))  // rollback SQL otomatis
     .run()
     .await?;
+
+// === DIAGNOSTICS v2 — untuk debugging ===
+
+// Explain query — lihat execution plan
+let plan = nb.from("orders")
+    .filter(col("status").eq("pending"))
+    .explain(ExplainMode::Analyze)
+    .await?;
+
+println!("{}", plan.format_tree()); // ASCII tree
+
+// Live query metrics
+let metrics = nb.diagnostics()
+    .slow_queries(threshold: Duration::from_millis(100))
+    .last(Duration::from_hours(1))
+    .await?;
+
+for q in metrics {
+    println!(
+        "[{}ms p99] {}: {}",
+        q.p99_ms, q.count, q.normalized_query
+    );
+}
 ```
 
 ---
 
-## 🖥️ Dashboard: Full Rust → WASM
+## Nova Insight: Observability Built-In
+
+```
+Semua metric, trace, dan log tersedia tanpa setup.
+Tidak perlu Datadog, Grafana, atau apapun.
+
+Default dashboards yang tersedia:
+
+  [1] Query Performance
+      • p50/p95/p99 latency per collection
+      • Slow query log (auto-captured > 100ms)
+      • Index hit rate
+      • Cache hit rate
+      • Query plan regressions (alert jika plan tiba-tiba lebih lambat)
+
+  [2] Storage Intelligence
+      • Per-collection storage layout (ROW/PAX/COL/FROZEN)
+      • Compression ratio per kolom
+      • SAIL decisions history (kapan optimize, berapa gain)
+      • Page morphing activity
+
+  [3] Replication Health
+      • Raft leader stability
+      • Replication lag per follower
+      • Speculative commit rollback rate (harus < 1%)
+      • Multi-region sync latency
+
+  [4] Tenant Resource Usage
+      • CPU/Memory/IO per project
+      • Quota utilization (alert 80%)
+      • Connection pool saturation
+      • Realtime subscription count
+
+  [5] Security Audit
+      • Authentication events (login, logout, failed attempts)
+      • Schema changes (siapa, kapan, apa)
+      • RLS violations (query yang di-reject)
+      • Semantic Engine decisions (LLM generate apa)
+
+  [6] Function Execution
+      • Cold start rate
+      • Function duration histogram
+      • Error rate per function
+      • Memory usage per invocation
+```
+
+---
+
+## Superposition Scheduler v2: Smarter Speculation
 
 ```rust
-// Dashboard dibangun dengan Leptos (best Rust web framework)
-// Compile ke WASM: zero JavaScript, pure Rust
+/// v2 tambah: adaptive budget, measurement, dan operator visibility.
 
-#[component]
-fn TableExplorer() -> impl IntoView {
-    let (query, set_query) = create_signal(String::new());
-    let (results, set_results) = create_signal(Vec::<Row>::new());
-    
-    // AI-powered query suggestions
-    let suggestions = create_memo(move |_| {
-        NovaByte::suggest_queries(&query.get())
-    });
-    
-    view! {
-        <div class="table-explorer">
-            // Smart query bar dengan autocomplete
-            <QueryBar
-                value=query
-                on_change=set_query
-                suggestions=suggestions
-            />
-            
-            // Real-time result preview
-            <Suspense fallback=|| view! { <Spinner/> }>
-                <DataGrid
-                    rows=results
-                    // Infinite scroll, virtualized
-                    on_scroll_end=load_more
-                />
-            </Suspense>
-            
-            // Live schema visualizer
-            <SchemaGraph interactive=true/>
-            
-            // Performance insights
-            <QueryAnalyzer show_execution_plan=true/>
-        </div>
+pub struct SuperpositionSchedulerV2 {
+    universes: Vec<ExecutionUniverse>,
+    budget: AdaptiveSpeculationBudget,
+    metrics: SpeculationMetrics,
+}
+
+pub struct AdaptiveSpeculationBudget {
+    /// Max CPU fraction untuk speculation (default 15%, max 30%)
+    cpu_fraction: AtomicF32,
+    /// Win rate tracker: berapa persen speculation benar-benar lebih cepat
+    win_rate: ExponentialMovingAverage,
+    /// Jika win rate < 40% → reduce budget (speculation tidak worth it)
+    /// Jika win rate > 70% → increase budget
+}
+
+pub struct SpeculationMetrics {
+    pub total_speculated: AtomicU64,
+    pub speculation_wins: AtomicU64,  // speculative plan memang lebih cepat
+    pub cpu_wasted_ns: AtomicU64,     // CPU yang dibuang untuk plan yang kalah
+    pub avg_speedup_pct: AtomicF32,   // rata-rata speedup dari speculation
+}
+
+impl SuperpositionSchedulerV2 {
+    pub async fn execute(&self, query: Query, ctx: &TenantContext) -> QueryResult {
+        // Jika query sederhana (< THRESHOLD): langsung, no overhead
+        if query.estimated_cost_ns() < SPECULATION_THRESHOLD_NS {
+            return self.execute_single(query).await;
+        }
+
+        // Jika budget habis: juga langsung
+        if !self.budget.has_capacity() {
+            return self.execute_single(query).await;
+        }
+
+        // Generate candidate plans (max 3)
+        let plans = self.planner.generate_candidates(&query, 3);
+
+        // Jika hanya 1 plan: tidak perlu speculation
+        if plans.len() <= 1 {
+            return self.execute_single_plan(plans.into_iter().next().unwrap()).await;
+        }
+
+        // Jalankan semua plans secara parallel
+        let cancel = CancellationGroup::new();
+        let winner: Arc<OnceLock<(QueryResult, usize)>> = Arc::new(OnceLock::new());
+        let start = Instant::now();
+
+        let handles: Vec<_> = plans.into_iter().enumerate().map(|(i, plan)| {
+            let cancel = cancel.clone();
+            let winner = winner.clone();
+            tokio::spawn(async move {
+                let result = execute_plan(plan, cancel.token()).await;
+                if winner.set((result, i)).is_ok() {
+                    cancel.cancel_all();
+                }
+            })
+        }).collect();
+
+        futures::future::join_all(handles).await;
+
+        let (result, winning_plan_idx) = Arc::try_unwrap(winner)
+            .unwrap()
+            .into_inner()
+            .unwrap();
+
+        // Update metrics
+        let elapsed = start.elapsed();
+        self.metrics.total_speculated.fetch_add(1, Relaxed);
+        if winning_plan_idx > 0 {
+            self.metrics.speculation_wins.fetch_add(1, Relaxed);
+        }
+
+        // Emit ke audit trace (operator bisa lihat plan mana yang menang)
+        ctx.trace.record_speculation(SpeculationRecord {
+            query_trace_id: ctx.trace.current_id(),
+            winning_plan_idx,
+            total_plans: plans_count,
+            elapsed_ns: elapsed.as_nanos() as u64,
+        });
+
+        result
     }
 }
 ```
 
 ---
 
-## 📦 Dependency Stack: Curated
+## Provisioner & Auto-Scaling
+
+```rust
+/// Komponen yang tidak ada di v1: bagaimana cluster scale sendiri?
+
+pub struct NovaProvisioner {
+    /// Provider: bare metal, Hetzner, AWS, GCP, atau hybrid
+    infra: Arc<InfraProvider>,
+    /// Metrics feed untuk scaling decisions
+    metrics: Arc<NovaInsight>,
+    /// Current cluster topology
+    topology: RwLock<ClusterTopology>,
+}
+
+pub struct ScalingPolicy {
+    /// Scale out: tambah node jika CPU > 70% untuk 5 menit
+    pub scale_out_threshold: ScalingThreshold,
+    /// Scale in: hapus node jika CPU < 20% untuk 30 menit
+    pub scale_in_threshold: ScalingThreshold,
+    /// Min/max nodes per region
+    pub min_nodes: u32,
+    pub max_nodes: u32,
+    /// Cooling period: jangan scale lagi dalam N menit setelah scale event
+    pub cooldown: Duration,
+    /// Pre-emptive scaling: scale berdasarkan trafik prediction (ML)
+    pub predictive_scaling: bool,
+}
+
+impl NovaProvisioner {
+    /// Scaling loop: berjalan setiap 30 detik
+    pub async fn scaling_loop(&self) {
+        loop {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+
+            let current_metrics = self.metrics.cluster_summary().await;
+            let decision = self.evaluate_scaling(&current_metrics);
+
+            match decision {
+                ScalingDecision::ScaleOut { region, count } => {
+                    tracing::info!(
+                        region = %region,
+                        count = count,
+                        cpu_pct = current_metrics.cpu_pct,
+                        "Auto-scaling OUT: provisioning new nodes"
+                    );
+                    self.add_nodes(region, count).await;
+                }
+                ScalingDecision::ScaleIn { nodes } => {
+                    // Drain dulu sebelum terminate
+                    for node in nodes {
+                        self.drain_node(node).await;
+                        self.terminate_node(node).await;
+                    }
+                }
+                ScalingDecision::Stable => {}
+            }
+        }
+    }
+}
+```
+
+---
+
+## Chaos Guard: Built-in Fault Tolerance Testing
+
+```rust
+/// Database yang tidak pernah ditest gagal → akan gagal di produksi.
+/// NovaByte include chaos testing built-in — bisa aktif di staging.
+
+pub struct ChaosGuard {
+    /// Apakah chaos aktif (default: false, hanya aktif di staging)
+    enabled: AtomicBool,
+    /// Probabilitas inject fault per operasi
+    fault_config: ChaosConfig,
+}
+
+pub struct ChaosConfig {
+    /// Probabilitas query timeout (simulate slow disk)
+    pub query_timeout_prob: f32,
+    /// Probabilitas network partition antar nodes
+    pub partition_prob: f32,
+    /// Probabilitas node crash (SIGKILL random node)
+    pub node_crash_prob: f32,
+    /// Probabilitas slow WAL write (simulate degraded NVMe)
+    pub slow_wal_prob: f32,
+    /// Probabilitas corrupt page (test recovery)
+    pub corrupt_page_prob: f32,
+}
+
+/// Output: laporan apakah sistem bertahan
+#[derive(Debug, Serialize)]
+pub struct ChaosReport {
+    pub test_duration: Duration,
+    pub faults_injected: u64,
+    pub data_loss_detected: bool,      // harus false
+    pub consistency_violations: u64,   // harus 0
+    pub recovery_time_p99: Duration,
+    pub operations_completed: u64,
+    pub operations_failed: u64,
+    pub availability_pct: f32,         // target: 99.999%
+}
+```
+
+---
+
+## NSF v2 dengan Vector Mode: Native AI Workloads
+
+```rust
+/// v2 tambah: native vector storage untuk embedding similarity search.
+/// Tidak perlu plugin terpisah — terintegrasi dalam storage engine.
+
+/// Vector page: dense float32 atau float16 vectors
+#[repr(C, align(4096))]
+pub struct VectorPage {
+    header: VectorPageHeader,
+    /// Vectors tersimpan sebagai flat array
+    /// [vec_0_dim_0, vec_0_dim_1, ..., vec_0_dim_N, vec_1_dim_0, ...]
+    data: [f32; VECTOR_PAGE_CAPACITY],
+}
+
+/// HNSW (Hierarchical Navigable Small World) index
+/// State of the art untuk approximate nearest neighbor search
+pub struct HNSWIndex {
+    /// Multi-layer graph
+    layers: Vec<HNSWLayer>,
+    /// Dimensionality
+    dim: u32,
+    /// efConstruction dan M parameter
+    config: HNSWConfig,
+    /// Mapping: node_id → vector page location
+    node_map: NodeMap,
+}
+
+impl HNSWIndex {
+    /// Insert vector — O(log n) average
+    pub async fn insert(&self, id: RowId, vector: &[f32]) -> Result<()> {
+        assert_eq!(vector.len(), self.dim as usize);
+        // ... HNSW insertion algorithm
+    }
+
+    /// k-nearest neighbor search — O(log n) average
+    pub async fn search(
+        &self,
+        query: &[f32],
+        k: usize,
+        ef_search: usize,
+    ) -> Vec<(RowId, f32)> { // (row_id, cosine_distance)
+        // ... HNSW search algorithm
+    }
+}
+
+/// SDK support untuk vector operations
+// Simpan embedding
+nb.from("documents")
+    .insert(Document {
+        content: "...",
+        embedding: embed_model.encode("...")?, // float32 vec
+    })
+    .await?;
+
+// Similarity search — natural, type-safe
+let similar = nb.from("documents")
+    .select(["id", "content"])
+    .vector_search(
+        "embedding",
+        query_vector,
+        k: 10,
+        min_similarity: 0.8,
+    )
+    .fetch::<Document>()
+    .await?;
+```
+
+---
+
+## Dependency Stack v2: Curated + Justified
 
 ```toml
 [workspace.dependencies]
 
 # === ASYNC RUNTIME ===
-tokio        = { version = "1",    features = ["full"] }
-monoio       = "0.2"               # io_uring native
+tokio        = { version = "1", features = ["full"] }
+monoio       = "0.2"             # io_uring native, untuk hot path storage I/O
 
 # === NETWORK ===
-quinn        = "0.11"              # QUIC
-axum         = "0.8"
-h2           = "0.4"
-tokio-tungstenite = "0.24"        # WebSocket
+quinn        = "0.11"            # QUIC (WebTransport support)
+axum         = "0.8"             # HTTP/REST gateway
+h2           = "0.4"             # HTTP/2 untuk gRPC-style APIs
+tokio-tungstenite = "0.24"      # WebSocket realtime
 
 # === PARSING ===
-nom          = "7"                 # zero-copy parser
-sonic-rs     = "0.3"              # SIMD JSON (Bytedance)
-sqlparser    = "0.51"
+nom          = "7"               # zero-copy binary protocol parser
+sonic-rs     = "0.3"            # SIMD JSON (Bytedance, fastest Rust JSON)
+sqlparser    = "0.51"           # SQL parser
 
-# === STORAGE ===
-memmap2      = "0.9"              # mmap
-rkyv         = "0.8"              # zero-copy serde
-bumpalo      = "3"                # arena allocator
-slab         = "0.4"              # slab allocator
-bytes        = "1"                # zero-copy bytes
+# === SERIALIZATION / STORAGE FORMAT ===
+rkyv         = "0.8"            # zero-copy serde (NSF format)
+bytes        = "1"              # zero-copy byte buffers
 
-# === JIT ===
-cranelift-codegen = "0.109"       # OLTP JIT
-inkwell      = "0.4"              # LLVM (OLAP JIT)
+# === MEMORY MANAGEMENT ===
+bumpalo      = "3"              # arena allocator (per-query)
+slab         = "0.4"            # slab allocator (stable addresses)
+memmap2      = "0.9"            # mmap untuk large files
+tikv-jemallocator = "0.6"      # jemalloc: lebih baik dari system malloc
+
+# === JIT COMPILATION ===
+cranelift-codegen = "0.109"    # JIT untuk OLTP queries (fast compile)
+inkwell      = "0.4"            # LLVM bindings (JIT untuk OLAP, lebih optimal)
 
 # === ML / BRAIN ===
-candle-core  = "0.6"              # Hugging Face ML in Rust
-candle-nn    = "0.6"              # neural nets
-candle-transformers = "0.6"       # LLM inference
+candle-core          = "0.6"   # Hugging Face ML in Rust (no Python dep)
+candle-nn            = "0.6"
+candle-transformers  = "0.6"   # Phi-3 inference untuk Semantic Engine
 
 # === INDEX ===
-# ART, RMI: implement sendiri (lebih kontrol)
-fastbloom    = "0.7"              # bloom filter
+fastbloom    = "0.7"           # Bloom filter (existence check sebelum disk read)
+# ART (Adaptive Radix Tree): implement sendiri — butuh tight integration
+# HNSW: implement sendiri — butuh custom memory layout untuk NSF
 
-# === CONSENSUS ===
-# Raft: implement sendiri (multi-raft butuh custom)
+# === CONSENSUS / REPLICATION ===
+# NovaRaft: implement sendiri — speculative commit butuh custom modifications
 
 # === AUTH ===
-opaque-ke    = "3"                # OPAQUE ZK-password
-ed25519-dalek = "2"               # EdDSA signing
-webauthn-rs  = "0.5"             # Passkey
-oauth2       = "4"
+opaque-ke    = "3"             # OPAQUE: zero-knowledge password auth
+ed25519-dalek = "2"           # EdDSA token signing
+webauthn-rs  = "0.5"          # Passkey / WebAuthn
+oauth2       = "4"             # OAuth2 social login
 
 # === COMPRESSION ===
-zstd         = "0.13"
-lz4_flex     = "0.11"
-bitpacking   = "0.9"              # SIMD bit packing
+zstd         = "0.13"         # general purpose, level 1-22
+lz4_flex     = "0.11"         # ultra fast, untuk hot data
+bitpacking   = "0.9"          # SIMD integer bit packing
+# FSST: implement sendiri (Fast Static Symbol Table) — string compression
+# Gorilla float encoding: implement sendiri (XOR delta)
 
 # === CONCURRENCY ===
-crossbeam-epoch   = "0.9"         # epoch GC
-cache-padded      = "1"           # false sharing prevention
-dashmap           = "6"           # concurrent hashmap
+crossbeam-epoch = "0.9"       # epoch-based memory reclamation (lock-free structs)
+crossbeam-channel = "0.5"     # lock-free channels
+cache-padded    = "1"         # prevent false sharing
+dashmap         = "6"         # concurrent hashmap
 
 # === HASHING ===
-blake3       = "1"                # fast hashing
-crc32fast    = "1"                # CRC32C hardware
+blake3       = "1"            # fast cryptographic hashing (WAL integrity)
+crc32fast    = "1"            # CRC32C hardware (page checksum)
+ahash        = "0.8"          # fast non-crypto (hashtable keys)
+xxhash-rust  = "0.8"          # XXH3: alternatif untuk non-security hash
+
+# === CRDT (offline sync) ===
+diamond-types = "1"           # production-grade CRDT (text + JSON)
+# Custom CRDT untuk structured data types
 
 # === OBSERVABILITY ===
-tracing      = "0.1"
-opentelemetry = "0.26"
-metrics      = "0.23"
+tracing           = "0.1"
+tracing-subscriber = "0.3"
+opentelemetry     = "0.26"    # OTLP export ke Grafana/Jaeger/dll
+metrics           = "0.23"    # prometheus-compatible metrics
 
-# === WASM ===
-wasmtime     = "24"               # edge functions runtime
+# === WASM RUNTIME ===
+wasmtime     = "24"           # edge functions runtime (sandboxed)
+
+# === ISOLATION ===
+# landlock-rs: Landlock LSM untuk filesystem isolation
+# cgroups-rs: cgroup v2 untuk resource limiting
 
 # === FRONTEND (Dashboard) ===
-leptos       = "0.7"              # Rust → WASM framework
+leptos       = "0.7"          # Rust → WASM (SSR + hydration)
 
 # === MISC ===
-ulid         = "1"                # ULID (better than UUID)
-ahash        = "0.8"              # fast non-crypto hash
-smallvec     = "1"                # stack-allocated vec
+ulid         = "1"            # ULID (sortable unique IDs, better than UUID v4)
+smallvec     = "1"            # stack-allocated vec (avoid heap alloc untuk small lists)
+parking_lot  = "0.12"        # faster mutex/rwlock daripada std
+once_cell    = "1"            # lazy statics + one-time init
 ```
 
 ---
 
-## 🏁 Performance: Realistic Projections
+## Performance Targets v2: Honest + Achievable
 
 ```
-NovaByte vs Kompetitor (single region, 3-node, NVMe):
+NovaByte v2 vs Kompetitor — single region, 3-node cluster, NVMe SSD
 
-┌──────────────────────────────────────────────────────────────────┐
-│  Metric                   │ Firebase │ Supabase │ NovaByte       │
-├──────────────────────────────────────────────────────────────────┤
-│  API latency p50          │  80ms    │  15ms    │  0.3ms         │
-│  API latency p99          │  300ms   │  80ms    │  3ms           │
-│  Write throughput         │  5K/s    │  15K/s   │  800K/s        │
-│  Read throughput          │  20K/s   │  80K/s   │  8M/s          │
-│  Realtime latency         │  100ms   │  40ms    │  0.5ms         │
-│  Concurrent connections   │  ~100K   │  ~50K    │  ~2M           │
-│  Analytical (10M rows)    │  N/A     │  2s      │  5ms           │
-│  RAM per 10K projects     │  huge    │  ~100GB  │  ~4GB          │
-│  Function cold start      │  500ms   │  200ms   │  0.5ms (WASM)  │
-│  Schema migration         │  manual  │  ~10s    │  ~50ms online  │
-│  Multi-region sync lag    │  ~200ms  │  ~100ms  │  ~10ms         │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Metric                     │ Firebase  │ Supabase  │ NovaByte v2           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  API latency p50             │  80ms     │  15ms     │  0.5ms                │
+│  API latency p99             │  300ms    │  80ms     │  5ms                  │
+│  API latency p99.9           │  N/A      │  N/A      │  20ms                 │
+│  Write throughput            │  5K/s     │  15K/s    │  500K/s (WAL limited) │
+│  Read throughput             │  20K/s    │  80K/s    │  5M/s (cached)        │
+│  Realtime latency p50        │  100ms    │  40ms     │  1ms                  │
+│  Concurrent connections      │  ~100K    │  ~50K     │  ~1M                  │
+│  OLAP query (10M rows)       │  N/A      │  2s       │  10ms (columnar)      │
+│  RAM per 10K projects        │  huge     │  ~100GB   │  ~8GB (isolated)      │
+│  WASM cold start             │  500ms    │  200ms    │  1ms                  │
+│  Online schema migration     │  manual   │  ~10s     │  < 100ms              │
+│  Multi-region sync lag p50   │  ~200ms   │  ~100ms   │  ~20ms                │
+│  Vector search (1M vecs)     │  N/A      │  ~50ms    │  ~2ms (HNSW)          │
+│  Recovery RTO                │  minutes  │  minutes  │  < 30s (WAL replay)   │
+│  Recovery RPO                │  N/A      │  minutes  │  < 1s (group commit)  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Catatan jujur:
+  • Write 500K/s adalah WAL-limited, bukan compute-limited
+  • Read 5M/s hanya untuk hot data di page cache
+  • Angka ini untuk dedicated hardware, bukan shared cloud
+  • p99.9 latency sangat bergantung pada compaction scheduling
+  • Multi-region 20ms asumsi PoP < 100ms RTT
 ```
 
 ---
 
-## 🛣️ Roadmap: 24 Bulan
+## Roadmap v2: Realistis
 
 ```
-Q1 2025 — Core Engine
-  ✦ NSF Morphic pages + shape-shifting
-  ✦ io_uring network server
-  ✦ Basic SQL + Cranelift JIT
-  ✦ EdDSA auth + OPAQUE
+Q1–Q2 2025 — Foundation (Sudah berjalan)
+  ✦ NSF Morphic pages (ROW/PAX/COLUMN/DELTA/FROZEN)
+  ✦ io_uring I/O engine (monoio)
+  ✦ WAL v2: group commit + PITR scaffolding
+  ✦ Basic SQL parser + Cranelift JIT
+  ✦ EdDSA auth + OPAQUE password protocol
 
-Q2 2025 — Intelligence Layer
-  ✦ SAIL Brain: workload classifier
-  ✦ Superposition query scheduler
-  ✦ Auto-index advisor
-  ✦ Realtime Disruptor engine
+Q3 2025 — Core Intelligence
+  ✦ SAIL Brain v2: closed-loop learning
+  ✦ Superposition scheduler v2
+  ✦ Adaptive per-column codec selection
+  ✦ NovaRaft v2: speculative commit + compensation log
 
-Q3 2025 — BaaS Complete
-  ✦ File storage + dedup + transforms
-  ✦ WASM edge functions
-  ✦ Multi-Raft replication
-  ✦ SDK: Rust + TypeScript
+Q4 2025 — Completeness
+  ✦ Realtime engine (Disruptor-inspired)
+  ✦ File storage + dedup + transformations
+  ✦ WASM edge functions (Wasmtime sandboxed)
+  ✦ SDK: Rust + TypeScript + Offline CRDT
+  ✦ Nova Trace: full audit log
 
-Q4 2025 — Semantic Layer
-  ✦ Embedded LLM (Candle + Phi-3)
-  ✦ Natural language API
-  ✦ Auto schema generation
-  ✦ Leptos dashboard (full Rust)
+Q1 2026 — Intelligence Layer
+  ✦ Semantic Engine v2 (Phi-3, auditable)
+  ✦ HNSW vector index + Vector page mode
+  ✦ Leptos dashboard: full Rust → WASM
+  ✦ Multi-tenancy isolation (Landlock + cgroup v2)
 
-Q1 2026 — Cloud Launch
-  ✦ Multi-region deployment
-  ✦ Billing + provisioner
+Q2 2026 — Production Ready
+  ✦ Multi-region deployment (5 regions)
+  ✦ Provisioner + auto-scaling
+  ✦ Billing system
+  ✦ Chaos Guard testing suite
   ✦ Public beta
-  ✦ SDK: Dart + Swift
 
-Q2 2026 — Scale
-  ✦ 300+ Edge PoP
-  ✦ Vector search (HNSW)
-  ✦ Offline-first CRDT sync
+Q3 2026 — Scale
+  ✦ 50+ Edge PoP
+  ✦ SDK: Dart + Swift + Python
+  ✦ Offline-first mobile SDK
   ✦ GA launch
+
+Q4 2026 — Ecosystem
+  ✦ 300+ Edge PoP
+  ✦ Marketplace: community WASM functions
+  ✦ Enterprise: SSO + SCIM + audit export
+  ✦ Serverless tier (scale to zero)
 ```
 
 ---
 
+## Prinsip Desain yang Tidak Bisa Dikompromikan
+
+```
+1. AUDITABILITY FIRST
+   Tidak ada black box. Setiap keputusan — dari SAIL, dari Semantic Engine,
+   dari Raft, dari Provisioner — terekam dan bisa di-inspect.
+   Jika Anda tidak bisa jelaskan MENGAPA sesuatu terjadi, itu bug.
+
+2. OPERATOR ERGONOMICS = USER ERGONOMICS
+   Dashboard tidak hanya untuk developer. Operations team harus bisa
+   melihat apa yang terjadi di dalam sistem tanpa baca kode.
+
+3. SAFE DEFAULTS, ZERO FOOTGUNS
+   Semua timeout, retry, backpressure, rate limiting — aktif by default.
+   Developer tidak perlu configure ini sendiri untuk behavior yang aman.
+
+4. COMPRESSION TANPA SACRIFICIAL LAMBDA
+   Kompresi tidak boleh trade-off dengan correctness atau debuggability.
+   Setiap data yang disimpan harus bisa dibaca kembali dengan tepat.
+   Setiap optimization harus reversible.
+
+5. EVOLUTION OVER REPLACEMENT
+   Database ini harus bisa di-upgrade secara rolling, zero downtime.
+   Schema migrations, storage format changes, index changes —
+   semua harus online, tidak ada maintenance window.
+
+6. FAILURE IS NORMAL, HANDLE IT GRACEFULLY
+   Network partition, disk failure, node crash — bukan edge case.
+   ChaosGuard memastikan sistem bertahan dari semua ini.
+   Recovery harus cepat, otomatis, dan ter-audit.
+```
+
+---
